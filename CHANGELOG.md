@@ -7,3 +7,9 @@
 - Added a worker-backed diagnostics workspace with cancellation, output controls, engineering charts and export.
 - Ported the existing 3D simulator to the validated integrator through a compatibility adapter.
 - Added 20 analytical and engine checks, retained seven existing regressions, and documented reproducible performance runs.
+
+## Phase 2
+
+- Added a parametric, locally saved 3D building constructor with eight Nepal-inspired presets and instance-based rendering.
+- Added architecture, inspection, section and modal views, and synthetic signal playback driven by the Phase 1 worker result.
+- Added versioned JSON projects, undo/redo, visual quality levels, and rendering and validation documentation.

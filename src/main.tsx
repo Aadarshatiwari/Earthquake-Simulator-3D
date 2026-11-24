@@ -5,6 +5,7 @@ import {presets,systems} from './presets';
 import './style.css';
 import {experiments} from './experiments';
 import type {CameraView} from './Scene';
+const Constructor=lazy(()=>import('./constructor/Constructor'));
 const Diagnostics=lazy(()=>import('./Diagnostics'));
 const Scene=lazy(()=>import('./Scene'));
 const Analytics=lazy(()=>import('./Analytics'));
@@ -12,7 +13,7 @@ const Explorer=lazy(()=>import('./Explorer'));
 const Learn=lazy(()=>import('./Learn'));
 const metrics=[['displacement','Peak displacement','mm',1000],['acceleration','Peak floor acceleration','g',1/G],['drift','Peak interstorey drift','%',100],['shear','Peak base shear','kN',.001]] as const;
 const dimensions=[['floors','Floors',1,20,1],['height','Floor height (m)',2,6,.05],['width','Width (m)',4,28,.5],['length','Depth (m)',4,24,.5],['column','Column width (m)',.2,1.5,.05],['beam','Beam depth (m)',.2,1.4,.05],['mass','Floor mass (t)',10,500,1],['stiffness','Storey stiffness (MN/m)',2,600,1],['damping','Damping (%)',0,25,.5]] as const;
-type Tab='Diagnostics'|'Simulation'|'Analytics'|'Nepal explorer'|'Learn';
+type Tab='Build & test'|'Diagnostics'|'Simulation'|'Analytics'|'Nepal explorer'|'Learn';
 const scenarios={
   'Valley benchmark':{pga:.28,hz:1.25,seconds:22,direction:0},
   'Resonance study':{pga:.15,hz:1.85,seconds:26,direction:0},
@@ -35,7 +36,7 @@ function Toggle({children,value,onClick}:{children:ReactNode;value:boolean;onCli
   return <button type="button" className={value?'toggle on':'toggle'} aria-pressed={value} onClick={onClick}>{children}</button>;
 }
 function App(){
-  const [tab,setTab]=useState<Tab>('Diagnostics');
+  const [tab,setTab]=useState<Tab>('Build & test');
   const [theme,setTheme]=useState(()=>{try{return localStorage.getItem('seismonepal-theme')??'dark'}catch{return 'dark'}});
   const [sidebar,setSidebar]=useState(false);
   const [cameraView,setCameraView]=useState<CameraView>('Perspective');
@@ -161,8 +162,8 @@ function App(){
   const sample=inspectedModel.result.samples[Math.min(Math.floor(clock/motion.dt),inspectedModel.result.samples.length-1)];
   const visibleSelection=selected?{building:inspectedBuilding,floor:inspectedFloor}:null;
   return <>
-    <header className="topbar"><a className="brand" href="#" onClick={e=>{e.preventDefault();setTab('Simulation')}}><img src={import.meta.env.BASE_URL+'logo.svg'} alt=""/><span>SeismoNepal <b>3D</b><small>Structural dynamics lab</small></span></a>
-      <nav aria-label="Main navigation">{(['Diagnostics','Simulation','Analytics','Nepal explorer','Learn'] as Tab[]).map(item=><button key={item} aria-current={item===tab?'page':undefined} onClick={()=>setTab(item)}>{item}</button>)}</nav>
+    <header className="topbar"><a className="brand" href="#" onClick={e=>{e.preventDefault();setTab('Build & test')}}><img src={import.meta.env.BASE_URL+'logo.svg'} alt=""/><span>SeismoNepal <b>3D</b><small>Structural dynamics lab</small></span></a>
+      <nav aria-label="Main navigation">{(['Build & test','Diagnostics','Simulation','Analytics','Nepal explorer','Learn'] as Tab[]).map(item=><button key={item} aria-current={item===tab?'page':undefined} onClick={()=>setTab(item)}>{item}</button>)}</nav>
       <button className="subtle theme" onClick={()=>setTheme(theme==='dark'?'light':'dark')}>{theme==='dark'?'Light mode':'Dark mode'}</button>
     </header>
     <main className="page">
@@ -172,6 +173,7 @@ function App(){
       <p>Linear elastic shear-building model for educational use. It cannot certify whether a real building is earthquake-safe.</p>
       {models.map(({building,result},i)=><section key={i}><h2>Building {i?'B':'A'} · {names[i]}</h2><p>{building.floors} floors · {building.system} · {building.foundation} foundation · {building.soil} site</p><p>Floor height {building.height} m · plan {building.width} × {building.length} m · floor mass {building.mass} t · input stiffness {building.stiffness} MN/m · input damping {building.damping}% · first mode {result.modal[0].hz.toFixed(3)} Hz</p><ul>{metrics.map(([key,label,unit,factor])=><li key={key}>{label} {(result.peaks[key]*factor).toFixed(3)} {unit}</li>)}</ul></section>)}
     </div>
+    <Suspense fallback={tab==='Build & test'?<p>Loading building constructor…</p>:null}><Constructor active={tab==='Build & test'}/></Suspense>
     {tab==='Diagnostics'&&<Suspense fallback={<p>Loading diagnostics…</p>}><Diagnostics/></Suspense>}
     {tab==='Simulation'&&<>
       <div className="heading"><div><h1>Simulation workspace</h1><p>Configure a building and explore how it responds to ground motion.</p></div><div className="actions"><Toggle value={sidebar} onClick={()=>setSidebar(!sidebar)}>Configuration</Toggle><Toggle value={compare} onClick={()=>{if(compare)setEdit(0);setCompare(!compare)}}>Compare buildings</Toggle></div></div>

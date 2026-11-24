@@ -19,9 +19,15 @@ npm run build
 npm run preview
 ```
 
+## Phase 2 building constructor
+
+The app opens on **Build & test**. Choose an architectural preset, edit the building dimensions and independent analytical inputs, and use **Continue to simulation** to run a synthetic earthquake. Use **Projects** to save, load or export your configuration.
+
+See [constructor guide](BUILDING_CONSTRUCTOR.md), [rendering architecture](RENDERING_ARCHITECTURE.md), [structural model mapping](STRUCTURAL_MODEL_MAPPING.md), [materials](MATERIAL_LIBRARY.md), [asset licenses](ASSET_LICENSES.md), [performance](MOBILE_PERFORMANCE.md) and [Phase 2 validation](PHASE_2_VALIDATION_REPORT.md).
+
 ## Phase 1 diagnostics
 
-The app opens on **Diagnostics**. Pick a model, edit independent storey values, and select **Run simulation**. Inspect the actual matrices and modes, switch between response and energy charts, and export the retained samples. **Simulation** opens the existing interactive 3D workspace.
+Choose **Diagnostics** in the main navigation. Pick a model, edit independent storey values, and select **Run simulation**. Inspect the actual matrices and modes, switch between response and energy charts, and export the retained samples. **Simulation** opens the existing interactive 3D workspace.
 
 ```sh
 npm test

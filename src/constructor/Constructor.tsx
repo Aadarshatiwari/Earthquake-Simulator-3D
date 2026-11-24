@@ -38,7 +38,7 @@ class SceneBoundary extends Component<{children:ReactNode;recover:()=>void},{fai
   static getDerivedStateFromError(){return {failed:true};}
   render(){return this.state.failed?<div className="constructor-fallback"><p>Unable to start WebGL. Configuration and project tools are still available.</p><button onClick={this.props.recover}>Retry graphics</button></div>:this.props.children;}
 }
-export default function Constructor({active}:{active:boolean}){
+export default function Constructor({active,onContinue}:{active:boolean;onContinue?:(project:Project)=>void}){
   const [history,setHistory]=useState<History>(()=>({past:[],current:fresh(),future:[]}));
   const [panel,setPanel]=useState<Panel>('Presets');
   const [expanded,setExpanded]=useState(true);
@@ -190,7 +190,7 @@ export default function Constructor({active}:{active:boolean}){
         <button onClick={()=>{if(history.past.length){stop();setHistory(old=>moveHistory(old,'undo'));}}} disabled={!history.past.length}>Undo</button>
         <button onClick={()=>{if(history.future.length){stop();setHistory(old=>moveHistory(old,'redo'));}}} disabled={!history.future.length}>Redo</button>
         <button onClick={()=>save()}>Save project</button>
-        <button className="build-primary" disabled={busy} onClick={startSimulation}>{busy?'Computing…':'Continue to simulation'}</button>
+        <button className="build-primary" disabled={busy} onClick={()=>onContinue?onContinue(current):startSimulation()}>{busy?'Computing…':'Continue to simulation'}</button>
       </div>
     </header>
     <div className="constructor-layout">

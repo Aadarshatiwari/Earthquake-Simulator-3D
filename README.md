@@ -19,6 +19,12 @@ npm run build
 npm run preview
 ```
 
+## Phase 3 earthquake laboratory
+
+Choose **Earthquake lab** or use **Continue to simulation** from a constructed building. Select a motion and **Calculate response**, then start playback. Try the Soft storey comparison or the Resonance tab to compare configurations. Sourced acceleration CSV, browser-local run storage and numerical CSV export are available from the lab.
+
+See [lab guide](EARTHQUAKE_SIMULATION.md), [ground motion](GROUND_MOTION_ENGINE.md), [controller](SIMULATION_CONTROLLER.md), [visualization](STRUCTURAL_VISUALIZATION.md), [resonance](RESONANCE_LAB.md), [comparison](COMPARISON_MODE.md), [Android performance](ANDROID_PERFORMANCE.md) and [validation](PHASE_3_VALIDATION_REPORT.md).
+
 ## Phase 2 building constructor
 
 The app opens on **Build & test**. Choose an architectural preset, edit the building dimensions and independent analytical inputs, and use **Continue to simulation** to run a synthetic earthquake. Use **Projects** to save, load or export your configuration.

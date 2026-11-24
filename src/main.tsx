@@ -5,6 +5,8 @@ import {presets,systems} from './presets';
 import './style.css';
 import {experiments} from './experiments';
 import type {CameraView} from './Scene';
+import type {Project} from './constructor/model';
+const EarthquakeLab=lazy(()=>import('./seismic/Simulator'));
 const Constructor=lazy(()=>import('./constructor/Constructor'));
 const Diagnostics=lazy(()=>import('./Diagnostics'));
 const Scene=lazy(()=>import('./Scene'));
@@ -13,7 +15,7 @@ const Explorer=lazy(()=>import('./Explorer'));
 const Learn=lazy(()=>import('./Learn'));
 const metrics=[['displacement','Peak displacement','mm',1000],['acceleration','Peak floor acceleration','g',1/G],['drift','Peak interstorey drift','%',100],['shear','Peak base shear','kN',.001]] as const;
 const dimensions=[['floors','Floors',1,20,1],['height','Floor height (m)',2,6,.05],['width','Width (m)',4,28,.5],['length','Depth (m)',4,24,.5],['column','Column width (m)',.2,1.5,.05],['beam','Beam depth (m)',.2,1.4,.05],['mass','Floor mass (t)',10,500,1],['stiffness','Storey stiffness (MN/m)',2,600,1],['damping','Damping (%)',0,25,.5]] as const;
-type Tab='Build & test'|'Diagnostics'|'Simulation'|'Analytics'|'Nepal explorer'|'Learn';
+type Tab='Earthquake lab'|'Build & test'|'Diagnostics'|'Simulation'|'Analytics'|'Nepal explorer'|'Learn';
 const scenarios={
   'Valley benchmark':{pga:.28,hz:1.25,seconds:22,direction:0},
   'Resonance study':{pga:.15,hz:1.85,seconds:26,direction:0},
@@ -36,7 +38,13 @@ function Toggle({children,value,onClick}:{children:ReactNode;value:boolean;onCli
   return <button type="button" className={value?'toggle on':'toggle'} aria-pressed={value} onClick={onClick}>{children}</button>;
 }
 function App(){
-  const [tab,setTab]=useState<Tab>('Build & test');
+  const [tab,setTab]=useState<Tab>(()=>new URLSearchParams(location.search).get('view')==='earthquake'?'Earthquake lab':'Build & test');
+  const [earthquakeSeed,setEarthquakeSeed]=useState<{project:Project;serial:number}|null>(null);
+  const [showEarthquake,setShowEarthquake]=useState(tab==='Earthquake lab');
+  function go(to:Tab){if(to==='Earthquake lab')setShowEarthquake(true);setTab(to);}
+  function testBuilding(project:Project){
+    setEarthquakeSeed(old=>({project,serial:(old?.serial??0)+1}));go('Earthquake lab');
+  }
   const [theme,setTheme]=useState(()=>{try{return localStorage.getItem('seismonepal-theme')??'dark'}catch{return 'dark'}});
   const [sidebar,setSidebar]=useState(false);
   const [cameraView,setCameraView]=useState<CameraView>('Perspective');
@@ -163,7 +171,7 @@ function App(){
   const visibleSelection=selected?{building:inspectedBuilding,floor:inspectedFloor}:null;
   return <>
     <header className="topbar"><a className="brand" href="#" onClick={e=>{e.preventDefault();setTab('Build & test')}}><img src={import.meta.env.BASE_URL+'logo.svg'} alt=""/><span>SeismoNepal <b>3D</b><small>Structural dynamics lab</small></span></a>
-      <nav aria-label="Main navigation">{(['Build & test','Diagnostics','Simulation','Analytics','Nepal explorer','Learn'] as Tab[]).map(item=><button key={item} aria-current={item===tab?'page':undefined} onClick={()=>setTab(item)}>{item}</button>)}</nav>
+      <nav aria-label="Main navigation">{(['Build & test','Earthquake lab','Diagnostics','Simulation','Analytics','Nepal explorer','Learn'] as Tab[]).map(item=><button key={item} aria-current={item===tab?'page':undefined} onClick={()=>go(item)}>{item}</button>)}</nav>
       <button className="subtle theme" onClick={()=>setTheme(theme==='dark'?'light':'dark')}>{theme==='dark'?'Light mode':'Dark mode'}</button>
     </header>
     <main className="page">
@@ -173,7 +181,10 @@ function App(){
       <p>Linear elastic shear-building model for educational use. It cannot certify whether a real building is earthquake-safe.</p>
       {models.map(({building,result},i)=><section key={i}><h2>Building {i?'B':'A'} · {names[i]}</h2><p>{building.floors} floors · {building.system} · {building.foundation} foundation · {building.soil} site</p><p>Floor height {building.height} m · plan {building.width} × {building.length} m · floor mass {building.mass} t · input stiffness {building.stiffness} MN/m · input damping {building.damping}% · first mode {result.modal[0].hz.toFixed(3)} Hz</p><ul>{metrics.map(([key,label,unit,factor])=><li key={key}>{label} {(result.peaks[key]*factor).toFixed(3)} {unit}</li>)}</ul></section>)}
     </div>
-    <Suspense fallback={tab==='Build & test'?<p>Loading building constructor…</p>:null}><Constructor active={tab==='Build & test'}/></Suspense>
+    <Suspense fallback={tab==='Build & test'?<p>Loading building constructor…</p>:null}><Constructor active={tab==='Build & test'} onContinue={testBuilding}/></Suspense>
+    {showEarthquake&&<Suspense fallback={tab==='Earthquake lab'?<p>Loading earthquake laboratory…</p>:null}>
+      <EarthquakeLab active={tab==='Earthquake lab'} seed={earthquakeSeed} onDamage={()=>{setDamage(true);setCollapse(true);restart(false);go('Simulation');}}/>
+    </Suspense>}
     {tab==='Diagnostics'&&<Suspense fallback={<p>Loading diagnostics…</p>}><Diagnostics/></Suspense>}
     {tab==='Simulation'&&<>
       <div className="heading"><div><h1>Simulation workspace</h1><p>Configure a building and explore how it responds to ground motion.</p></div><div className="actions"><Toggle value={sidebar} onClick={()=>setSidebar(!sidebar)}>Configuration</Toggle><Toggle value={compare} onClick={()=>{if(compare)setEdit(0);setCompare(!compare)}}>Compare buildings</Toggle></div></div>
@@ -211,6 +222,7 @@ function App(){
       <div className="work-main">
         <section className="panel viewport" ref={viewport} aria-label="Interactive structural model">
           <div className="viewport-head"><div><h2>Structural model</h2><p>{compare?'A · '+models[0].building.system+'  /  B · '+models[1].building.system:model.system} · {motion.label}</p></div><button className="subtle" onClick={()=>{if(document.fullscreenElement)void document.exitFullscreen();else viewport.current?.requestFullscreen?.().catch(()=>setViewError('Fullscreen is unavailable.'))}}>Fullscreen</button></div>
+          {(damage||collapse)&&<p className="legacy-damage-label">Illustrative damage visualization — not a predicted structural failure.</p>}
           <div className="canvas-wrap"><Suspense fallback={<div className="loading">Loading 3D scene…</div>}><Scene {...{models,time,dt:motion.dt,direction:settings.direction,scale,wire,section,demand,damage,collapse,playing,runId,cameraId,cameraView,selected:visibleSelection,onFloor:(building:number,floor:number)=>setSelected({building,floor})}}/></Suspense>
             <div className="view-key">{demand&&<span className="demand-key">Drift demand <i/> 0–2.5%+</span>}{collapse?<span>Scripted collapse · independent of calculated response</span>:damage&&<span>Illustrative cracking and debris</span>}<span>Drag to orbit · scroll to zoom · use Section to see inside</span></div>
           </div>

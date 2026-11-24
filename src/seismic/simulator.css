@@ -1,0 +1,44 @@
+.quake-lab{--surface:#111f2b;--raised:#183041;--border:#2a4659;--text:#e8f4fa;--sub:#a9c3d1;--accent:#75eafa;--strong:#17475b;color:var(--text)}
+.quake-heading{display:flex;justify-content:space-between;align-items:end;gap:14px;margin-bottom:18px}
+.quake-heading h1{font-size:clamp(1.75rem,3.2vw,3rem);letter-spacing:-.055em;font-weight:760;margin:0;line-height:1.08}
+.quake-heading p,.quake-sub{color:var(--sub);margin:.45rem 0;font-size:.9rem;line-height:1.45}
+.quake-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,315px);gap:14px;align-items:start}
+.quake-card{border:1px solid var(--border);min-width:0;border-radius:14px;background:var(--surface);overflow:hidden}
+.quake-card h2{font-size:1.02rem;line-height:1.25;margin:0;font-weight:740}
+.quake-card-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between;padding:12px}
+.quake-card-row>div:first-child{flex:1}.quake-card-row .quake-sub{margin:.15rem 0 0}
+.quake-actions,.quake-tabs{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.quake-lab button{min-height:40px}.quake-lab .quake-primary{background:#6eeaff;color:#112735;border-color:transparent}
+.quake-canvas{position:relative;height:clamp(365px,51vh,620px);background:#172a35;isolation:isolate}.quake-canvas canvas{touch-action:none}
+.quake-stage:fullscreen{display:flex;flex-direction:column;overflow:auto;border-radius:0}.quake-stage:fullscreen .quake-canvas{flex:1;min-height:240px}
+.quake-hud{position:absolute;left:10px;bottom:10px;display:flex;flex-wrap:wrap;gap:5px;pointer-events:none}
+.quake-hud span{border:1px solid #558092;border-radius:6px;padding:4px 8px;font-size:.8rem;background:#101f2be8;color:#d9f5fc}
+.quake-toolbar,.quake-timeline{padding:10px 12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:9px;flex-wrap:wrap}.quake-toolbar label{flex:1;min-width:100px}
+.quake-lab label{display:grid;gap:4px;color:var(--sub);font-size:.84rem;min-width:0}
+.quake-lab :is(input[type=number],input[type=file],input:not([type]),select){width:100%;min-width:0;border:1px solid var(--border);border-radius:7px;background:var(--raised);color:var(--text);padding:7px}
+.quake-lab input[type=range],.quake-lab input[type=checkbox],.quake-lab progress{accent-color:#66dff0}
+.quake-lab .quake-flag{display:flex;align-items:center;gap:6px;min-height:36px}.quake-time{flex:1;min-width:105px;font-variant-numeric:tabular-nums}
+.quake-legend{display:grid;grid-template-columns:auto minmax(60px,1fr) auto;gap:8px;align-items:center;padding:8px 12px;color:var(--sub);font-size:.79rem}
+.quake-legend div{height:7px;border-radius:4px}.quake-wave-wrap{padding:0 12px 10px;border-top:1px solid var(--border)}
+.quake-wave-wrap .quake-card-row{padding:7px 0;color:var(--sub);font-size:.82rem}.quake-wave{width:100%;height:54px;display:block;cursor:crosshair}
+.quake-config{padding:12px}.quake-config summary{font-weight:720;cursor:pointer;margin-bottom:11px}.quake-config label{margin-top:8px}
+.quake-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 8px}.quake-tabs{margin-bottom:10px}
+.quake-run{border-top:1px solid var(--border);margin-top:10px;padding-top:10px;display:flex;flex-wrap:wrap;gap:6px}.quake-run progress{width:100%}
+.quake-run p{font-size:.87rem;color:var(--accent);flex:1 0 100%;margin:0}
+.quake-results{margin-top:15px}.quake-results>.quake-card{margin-bottom:12px}
+.quake-live{padding:12px}.quake-live .quake-card-row{padding:0}.quake-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0 2px}
+.quake-metrics div{min-width:0;border:1px solid var(--border);border-radius:8px;padding:8px;background:#132736}
+.quake-metrics dt{color:var(--sub);font-size:.8rem}.quake-metrics dd{margin:.25rem 0 0;color:#95effc;font-weight:700;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.quake-plot{height:335px;overflow:hidden;min-width:0}.quake-table{overflow:auto}.quake-table table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+.quake-table :is(th,td){padding:8px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+.quake-warning{color:#ffd29a;font-size:.88rem}.quake-saves{list-style:none;padding:0}.quake-saves li{display:flex;gap:5px;margin-bottom:5px}.quake-saves li button:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.quake-alert{padding:8px;border:1px solid var(--border);border-radius:7px}.quake-alert button{margin-right:5px}
+.legacy-damage-label{background:#422a23;color:#ffe1bf;font-weight:650;margin:0;padding:8px 12px}
+@media(max-width:860px){.quake-grid{grid-template-columns:minmax(0,1fr)}.quake-heading{align-items:start;flex-direction:column}.quake-canvas{height:clamp(315px,49vh,520px)}.quake-config{padding-bottom:calc(12px + env(safe-area-inset-bottom))}.quake-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.quake-legend{font-size:.72rem}.quake-toolbar label{min-width:85px}.quake-canvas{height:320px}.quake-timeline button{padding:.4rem .52rem}}
+@media(max-height:500px) and (orientation:landscape){.quake-canvas{height:64vh;min-height:230px}}
+
+@media(min-width:761px) and (max-width:1120px){
+  .topbar{height:auto;grid-template-columns:minmax(0,1fr) auto;padding:.65rem 1rem;gap:.6rem}
+  .topbar nav{grid-column:1/-1;grid-row:2;overflow:auto}
+}

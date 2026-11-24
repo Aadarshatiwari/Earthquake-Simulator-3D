@@ -1,7 +1,7 @@
 import {useEffect,useLayoutEffect,useMemo,useRef,type RefObject} from 'react';
 import {Canvas,useThree,useFrame} from '@react-three/fiber';
 import {OrbitControls,OrthographicCamera,PerspectiveCamera,ContactShadows,AdaptiveDpr} from '@react-three/drei';
-import {ACESFilmicToneMapping,BoxGeometry,ExtrudeGeometry,Shape,Group,InstancedMesh,MeshStandardMaterial,Object3D,Plane,PMREMGenerator,Vector3} from 'three';
+import {ACESFilmicToneMapping,Color,Mesh,MeshBasicMaterial,DoubleSide,BoxGeometry,ExtrudeGeometry,Shape,Group,InstancedMesh,MeshStandardMaterial,Object3D,Plane,PMREMGenerator,Vector3} from 'three';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import type {OrbitControls as Controls} from 'three-stdlib';
 import type {ConstructorResult} from './analysis';
@@ -12,7 +12,9 @@ import {surfaceSpec,makeSurface} from './materials';
 import {floorDisplacement,type generate,type Part} from './geometry';
 
 import {qualities,type Options} from './viewOptions';
-type Props={geometry:ReturnType<typeof generate>;config:Config;options:Options;selected:string|null;onSelect:(part:Part)=>void;fit:number;time:RefObject<number>;mode:Mode|null;result:ConstructorResult|null;playing:boolean;motion:'modal'|'seismic'|null;onLost:(lost:boolean)=>void;onFps:(fps:number)=>void};
+import {channels,heatMagnitude,heatStops,storeyTransform,type Heat} from '../seismic/controller';
+type Comparison={geometry:ReturnType<typeof generate>;config:Config;selected:string|null;result:ConstructorResult|null;mode:Mode|null;onSelect:(part:Part)=>void};
+type Props={geometry:ReturnType<typeof generate>;config:Config;options:Options;selected:string|null;onSelect:(part:Part)=>void;fit:number;time:RefObject<number>;mode:Mode|null;result:ConstructorResult|null;playing:boolean;motion:'modal'|'seismic'|null;onLost:(lost:boolean)=>void;onFps:(fps:number)=>void;comparison?:Comparison;heat?:Heat;heatMax?:number;direction?:number;showGround?:boolean;reference?:boolean;waves?:boolean;frameTime?:number};
 const box=new BoxGeometry(1,1,1);
 const triangle=new Shape();
 triangle.moveTo(-.5,0);triangle.lineTo(.5,0);triangle.lineTo(0,1);triangle.closePath();
@@ -136,9 +138,12 @@ function Batch({parts,origin,material,plane,onSelect}:{parts:Part[];origin:numbe
     }}/>;
 }
 
-function Structure({config,geometry,options,selected,onSelect,time,mode,result,motion}:Props){
+function Structure({config,geometry,options,selected,onSelect,time,mode,result,motion,heat='None',heatMax=1,direction=0,showGround=true}:Props){
   const floorGroups=useRef<(Group|null)[]>([]);
   const platform=useRef<Group>(null);
+  const bands=useRef<(Mesh<BoxGeometry,MeshBasicMaterial>|null)[]>([]);
+  const gradient=useMemo(()=>heatStops.map(stop=>new Color(stop)),[]);
+  const radians=direction*Math.PI/180,dx=Math.cos(radians),dz=Math.sin(radians);
   const plane=useMemo(()=>new Plane(),[]);
   const {view}=options;
   const storeyParts=useMemo(()=>{
@@ -173,25 +178,31 @@ function Structure({config,geometry,options,selected,onSelect,time,mode,result,m
   const modeScale=mode?Math.max(...mode.shape.map(Math.abs)):1;
   function displacement(dof:number,t:number){
     if(dof<0)return 0;
-    if(motion==='modal'&&mode)return Math.sin(t*2*Math.PI*Math.min(mode.hz,1.4))*mode.shape[dof]/modeScale*options.exaggeration*.07;
-    if(motion==='seismic'&&result)return floorDisplacement(result.traces.displacement,result.time,n,dof,t)*options.exaggeration;
+    if(motion==='modal'&&mode)return Math.sin(t*2*Math.PI*Math.min(mode.hz,1.4))*mode.shape[dof]/modeScale*.07;
+    if(motion==='seismic'&&result)return floorDisplacement(result.traces.displacement,result.time,n,dof,t);
     return 0;
   }
   useFrame(()=>{
     const t=time.current;
     // Absolute ground offset is a separate trace integrated in the worker.
-    const ground=motion==='seismic'&&result?.groundDisplacement
+    const ground=showGround&&motion==='seismic'&&result?.groundDisplacement
       ?floorDisplacement(result.groundDisplacement,result.time,1,0,t)*options.exaggeration:0;
-    if(platform.current)platform.current.position.x=ground;
+    if(platform.current)platform.current.position.set(ground*dx,0,ground*dz);
     floorGroups.current.forEach((group,index)=>{
       if(!group)return;
       const storey=index-1;
       const previous=displacement(storey+isolated-1,t),next=displacement(storey+isolated,t);
       const y=storey<0?0:geometry.elevations[storey]+(view==='Exploded'?options.gap*index:0);
-      const translation=storey<0?next:previous;
-      const slope=storey<0?0:(next-previous)/config.levels[storey].heightM;
-      group.matrix.set(1,slope,0,translation, 0,1,0,y, 0,0,1,0, 0,0,0,1);
+      const {shift,slope}=storeyTransform(storey<0?next:previous,next,storey<0?1:config.levels[storey].heightM,options.exaggeration);
+      group.matrix.set(1,slope*dx,0,shift*dx, 0,1,0,y, 0,slope*dz,1,shift*dz, 0,0,0,1);
       group.matrixWorldNeedsUpdate=true;
+      const band=bands.current[index];
+      if(!band||heat==='None')return;
+      const dof=storey+isolated;
+      const value=heat==='Modal displacement'&&mode?Math.abs(mode.shape[dof])/modeScale:
+        heat!=='Modal displacement'&&result?heatMagnitude(heat,floorDisplacement(result.traces[channels[heat]],result.time,n,dof,t)):0;
+      const indexColor=Math.min(1,value/heatMax)*(gradient.length-1), lower=Math.floor(indexColor);
+      band.material.color.copy(gradient[lower]).lerp(gradient[Math.min(lower+1,gradient.length-1)],indexColor-lower);
     });
   });
   const visibleParts=useMemo(()=>storeyParts.map(parts=>parts.filter(part=>{
@@ -221,12 +232,39 @@ function Structure({config,geometry,options,selected,onSelect,time,mode,result,m
         const origin=i===0?0:geometry.elevations[i-1];
         return <group key={i} matrixAutoUpdate={false} ref={el=>{floorGroups.current[i]=el;}}>
           {batches.map(([material,parts])=><Batch key={material.uuid} {...{parts,origin,material,plane:clipped,onSelect}}/>)}
-          {active.map(part=>draw(part,false,origin))}
+                    {active.map(part=>draw(part,false,origin))}
+          {heat!=='None'&&i>0&&view!=='Section'&&(view!=='Floor isolation'||options.floor===i-1)&&<mesh ref={node=>{bands.current[i]=node as Mesh<BoxGeometry,MeshBasicMaterial>|null;}}
+            position={[0,config.levels[i-1].heightM-.14,geometry.length*.5+.11]}
+            onClick={event=>{if(event.delta>5)return;event.stopPropagation();const slab=geometry.parts.find(part=>part.storey===i-1&&(part.type==='Slab'||part.type==='Roof'));if(slab)onSelect(slab);}}>
+            <boxGeometry args={[geometry.width,.16,.12]}/><meshBasicMaterial toneMapped={false}/>
+          </mesh>}
         </group>;
       })}
     </group>
     {options.ghost&&motion&&<group dispose={null}>{visibleParts.flat().filter(part=>!part.nonstructural).map(part=>draw(part,true))}</group>}
   </>;
+}
+function SeismicReference({time,direction=0,extent,waves}:{time:RefObject<number>;direction?:number;extent:number;waves:boolean}){
+  const ring=useRef<Mesh>(null);
+  const angle=direction*Math.PI/180;
+  useFrame(()=>{
+    if(!ring.current)return;
+    const phase=1+(time.current%3)*8;
+    ring.current.scale.setScalar(phase);
+  });
+  return <>
+    <gridHelper args={[Math.max(40,extent*2),24,'#72baca','#486b72']} position={[0,.015,0]}/>
+    <group position={[0,.06,extent*.58]} rotation={[0,-angle,0]}>
+      <mesh><boxGeometry args={[extent*.38,.035,.09]}/><meshBasicMaterial color="#73efff"/></mesh>
+      <mesh position={[extent*.22,0,0]} rotation={[0,0,-Math.PI/2]}><coneGeometry args={[.25,.72,12]}/><meshBasicMaterial color="#73efff"/></mesh>
+    </group>
+    {waves&&<mesh ref={ring} position={[0,.028,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.93,1,64]}/><meshBasicMaterial transparent opacity={.33} color="#66e6f7" side={DoubleSide} depthWrite={false}/></mesh>}
+  </>;
+}
+function FrameInvalidator({time}:{time?:number}){
+  const invalidate=useThree(state=>state.invalidate);
+  useEffect(()=>invalidate(),[time,invalidate]);
+  return null;
 }
 function Monitor({active,onFps,onLost}:{active:boolean;onFps:Props['onFps'];onLost:Props['onLost']}){
   const gl=useThree(state=>state.gl);
@@ -248,9 +286,16 @@ function Monitor({active,onFps,onLost}:{active:boolean;onFps:Props['onFps'];onLo
 }
 export default function Viewport(props:Props){
   const level=props.options.quality==='Automatic'?(devicePixelRatio>1.5||navigator.hardwareConcurrency<=4?1:2):qualities.indexOf(props.options.quality)-1;
+  const second=props.comparison;
+  const spacing=second?(props.geometry.width+second.geometry.width)/4+2.4:0;
+  const fitGeometry=useMemo(()=>second?{...props.geometry,width:spacing*2+(props.geometry.width+second.geometry.width)/2,height:Math.max(props.geometry.height,second.geometry.height),length:Math.max(props.geometry.length,second.geometry.length)}:props.geometry,[props.geometry,second?.geometry,spacing]);
   return <Canvas frameloop={props.playing?'always':'demand'} dpr={level===0?1:[1,level===1?1.25:level===2?1.65:2]}
     shadows={level>0} gl={{antialias:true,toneMapping:ACESFilmicToneMapping,localClippingEnabled:true}} fallback={<p className="constructor-fallback">WebGL 2 is unavailable. Building configuration and project tools remain available.</p>}>
-    <Stage options={props.options} level={level} footing={props.config.footing}/>{props.options.quality==='Automatic'&&<AdaptiveDpr/>}<Rig options={props.options} geometry={props.geometry} fit={props.fit}/>
-    <Structure {...props}/><Monitor active={props.playing} onFps={props.onFps} onLost={props.onLost}/>
+    <Stage options={props.options} level={level} footing={props.config.footing}/>{props.options.quality==='Automatic'&&<AdaptiveDpr/>}<Rig options={props.options} geometry={fitGeometry} fit={props.fit}/>
+        {props.reference&&<SeismicReference time={props.time} direction={props.direction} extent={Math.max(fitGeometry.width,fitGeometry.length)} waves={Boolean(props.waves)}/>}
+    <group position={[-spacing,0,0]}><Structure {...props}/></group>
+    {second&&<group position={[spacing,0,0]}><Structure {...props} {...second} options={{...props.options,floor:Math.min(props.options.floor,second.config.levels.length-1)}}/></group>}
+    <FrameInvalidator time={props.frameTime}/>
+    <Monitor active={props.playing} onFps={props.onFps} onLost={props.onLost}/>
   </Canvas>;
 }

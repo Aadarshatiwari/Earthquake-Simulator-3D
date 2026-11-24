@@ -13,3 +13,10 @@
 - Added a parametric, locally saved 3D building constructor with eight Nepal-inspired presets and instance-based rendering.
 - Added architecture, inspection, section and modal views, and synthetic signal playback driven by the Phase 1 worker result.
 - Added versioned JSON projects, undo/redo, visual quality levels, and rendering and validation documentation.
+
+## Phase 3
+
+- Added a dedicated earthquake laboratory with constructor handoff, a cancellable worker, synchronized timeline, floor-level heatmaps, and structural response histories.
+- Added synthetic scenario controls, sourced CSV, corrected synthetic ground kinematics, steady-state resonance, and side-by-side comparisons.
+- Added local simulation result storage, duplicate/delete, JSON and CSV export, optional procedural rumble and haptics, and isolated access to the visual damage demo.
+- Added Phase 3 automated checks and reproducible numerical performance benchmarks.

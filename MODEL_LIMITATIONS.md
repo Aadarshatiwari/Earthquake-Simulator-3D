@@ -11,3 +11,7 @@ SeismoNepal 3D is an educational simulator. Real-building earthquake safety requ
 - The engine fits Rayleigh ratios at selected modes. Local dashpots can create nonproportional damping. The published mode shapes and frequencies describe the corresponding undamped eigenproblem.
 - Energy balance verifies the discrete update. A coarse but energy-consistent solution can still have large phase error.
 - The diagnostics engine requires no network after the app is loaded. Offline Android packaging and device testing remain future work.
+
+## Phase 3 playback
+
+The new laboratory plots linear floor-level quantities and contains no member stress or failure criterion. Ground movement is available for supported synthetic inputs through baseline correction and numerical integration. Imported acceleration is used without inferring ground displacement. Waves, rumble, haptic cues, and the separately accessible damage demonstration are illustrative. See [ground motion](GROUND_MOTION_ENGINE.md) and [structural visualization](STRUCTURAL_VISUALIZATION.md).

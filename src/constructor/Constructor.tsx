@@ -1,23 +1,24 @@
+import {projectId} from '../ui/projectId';
 import {Component,lazy,Suspense,useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {assembleModel} from '../engine';
 import {generate,type Part} from './geometry';
 import {editHistory,materials,moveHistory,numberLimits,presetConfig,presets,readLibrary,readProject,resize,toModel,validateConfig,writeProject,type Config,type History,type Level,type Project} from './model';
 import type {ConstructorResult} from './analysis';
-import {cameras,environments,qualities,views,type Options} from './viewOptions';
+import {cameras,environments,lightings,qualities,views,type Options} from './viewOptions';
 import {useFullscreen} from '../ui/useFullscreen';
 import './constructor.css';
 
 const Viewport=lazy(()=>import('./Viewport'));
 const storageKey='seismonepal-projects-v1';
 const defaultOptions:Options={view:'Architectural',camera:'Perspective',quality:'Automatic',environment:'Kathmandu neighbourhood',floor:0,gap:.9,clip:.54,axis:'Depth',ghost:false,exaggeration:8,details:true};
-const fresh=():Project=>({version:1,id:crypto.randomUUID(),name:'Concrete residence',config:presetConfig('Concrete residence')});
+const fresh=():Project=>({version:1,id:projectId(),name:'Concrete residence',config:presetConfig('Concrete residence')});
 const geometryFields=[
   ['width','Plan width (m)',.25],['length','Plan depth (m)',.25],['baysX','Bays across',1],['baysZ','Bays deep',1],
   ['columnWidth','Column width (m)',.05],['columnDepth','Column depth (m)',.05],['beamWidth','Beam width (m)',.05],['beamDepth','Beam depth (m)',.05],
   ['slab','Slab thickness (m)',.025],['wall','Wall thickness (m)',.025],['footing','Footing depth (m)',.05],['overhang','Footing extension (m)',.05],
   ['glazing','Window width fraction',.05],['entryBay','Front entry bay',1],['reinforcementBay','Reinforcement bay',1],
 ] as const;
-const presetTraits=['Stone walls · pitched roof','Exposed brick · timber windows','Concrete frame · balconies','Open ground-floor parking','Broad glazing · eight storeys','Exposed steel diagonals','Interior concrete wall','Visible isolation bearings'];
+const presetTraits=['Stone walls · pitched roof','Exposed brick · timber windows','Concrete frame · balconies','Open ground-floor parking','Broad glazing · eight storeys','Exposed steel diagonals','Interior concrete wall','Visible isolation bearings','Low-rise brick · pitched roof','Open ground floor · urban frontage','Wide classroom wings','Broad institutional floor plan'];
 const panels=['Presets','Geometry','Analysis','View','Projects'] as const;
 type Panel=typeof panels[number];
 function NumberInput({label,value,min,max,step,change}:{label:string;value:number;min:number;max:number;step:number;change:(n:number)=>boolean|void}){
@@ -39,7 +40,7 @@ class SceneBoundary extends Component<{children:ReactNode;recover:()=>void},{fai
   static getDerivedStateFromError(){return {failed:true};}
   render(){return this.state.failed?<div className="constructor-fallback"><p>Unable to start WebGL. Configuration and project tools are still available.</p><button onClick={this.props.recover}>Retry graphics</button></div>:this.props.children;}
 }
-export default function Constructor({active,onContinue}:{active:boolean;onContinue?:(project:Project)=>void}){
+export default function Constructor({active,onContinue,quality}:{active:boolean;quality?:Options['quality'];onContinue?:(project:Project)=>void}){
   const [history,setHistory]=useState<History>(()=>({past:[],current:fresh(),future:[]}));
   const [panel,setPanel]=useState<Panel>('Presets');
   const [expanded,setExpanded]=useState(true);
@@ -50,7 +51,8 @@ export default function Constructor({active,onContinue}:{active:boolean;onContin
   const [library,setLibrary]=useState(initialLibrary.projects);
   const [notice,setNotice]=useState(initialLibrary.warning);
   const [deletion,setDeletion]=useState<Project|null>(null);
-  const [options,setOptions]=useState(defaultOptions);
+  const [options,setOptions]=useState(()=>({...defaultOptions,quality:quality??defaultOptions.quality}));
+  useEffect(()=>{if(quality)setOptions(o=>({...o,quality}));},[quality]);
   const [storedSelection,setSelected]=useState<string|null>(null);
   const [partType,setPartType]=useState<Part['type']>('Column');
   const [level,setLevel]=useState(0);
@@ -136,7 +138,7 @@ export default function Constructor({active,onContinue}:{active:boolean;onContin
     catch{setNotice('Local storage is unavailable or full. Export the project as JSON.');return false;}
   }
   function save(asCopy=false){
-    const project=asCopy?{...current,id:crypto.randomUUID(),name:(current.name.slice(0,63)+' copy')}:current;
+    const project=asCopy?{...current,id:projectId(),name:(current.name.slice(0,63)+' copy')}:current;
     const next=library.some(p=>p.id===project.id)?library.map(p=>p.id===project.id?project:p):[project,...library];
     if(next.length>40){setNotice('The local library holds at most 40 projects.');return;}
     if(store(next)){
@@ -268,6 +270,7 @@ export default function Constructor({active,onContinue}:{active:boolean;onContin
             <p className="build-note">{mode.period.toFixed(3)} s period · {(100*mode.effectiveMassRatio).toFixed(1)}% effective mass</p>
           </>}
           {panel==='View'&&<>
+            <Choice label="Lighting" value={options.lighting??'Daytime'} choices={lightings} change={v=>changeOption('lighting',v)}/>
             <Choice label="Environment" value={options.environment} choices={environments} change={v=>changeOption('environment',v)}/>
             {options.view==='Material inspection'&&<>
               <label>Component type<select value={partType} onChange={e=>setPartType(e.target.value as Part['type'])}>{[...new Set(geometry.parts.map(part=>part.type))].map(type=><option key={type}>{type}</option>)}</select></label>

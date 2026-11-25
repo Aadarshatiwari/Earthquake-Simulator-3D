@@ -39,5 +39,5 @@ console.log('Export',full.split('\n').length-2,'rows',Buffer.byteLength(full),'b
 console.log('Recorded intensity',study.intensity.arias,study.intensity.d595,study.intensity.pga);
 console.log('Convergence',refine(variants[0],motion));
 console.log('Numerical array bytes',study.cases.reduce((s,c)=>s+c.run.packed.byteLength,0));
-const pdf=measure('three-page PDF',()=>reportPdf('Gorkha mainshock: baseline and isolation',motion,study,variants));
+const pdf=measure('three-page PDF',()=>reportPdf('Gorkha mainshock: baseline and isolation',motion,study,variants,'',new Date(),{format:'Comprehensive'}));
 if(process.argv[2])writeFileSync(process.argv[2],pdf);

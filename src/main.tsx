@@ -3,6 +3,9 @@ import {createRoot} from 'react-dom/client';
 import {G,parseMotion,simulate,synthetic,type Building,type Motion} from './solver';
 import {presets,systems} from './presets';
 import './style.css';
+import './shell/shell.css';
+import {Home,Navigation,Page,readPrefs} from './shell/Shell';
+import {resolveRoute,routeUrl,type Route as Tab} from './shell/routes';
 import {experiments} from './experiments';
 import type {CameraView} from './Scene';
 import type {Experiment} from './protection/analysis';
@@ -19,7 +22,6 @@ const Explorer=lazy(()=>import('./Explorer'));
 const Learn=lazy(()=>import('./Learn'));
 const metrics=[['displacement','Peak displacement','mm',1000],['acceleration','Peak floor acceleration','g',1/G],['drift','Peak interstorey drift','%',100],['shear','Peak base shear','kN',.001]] as const;
 const dimensions=[['floors','Floors',1,20,1],['height','Floor height (m)',2,6,.05],['width','Width (m)',4,28,.5],['length','Depth (m)',4,24,.5],['column','Column width (m)',.2,1.5,.05],['beam','Beam depth (m)',.2,1.4,.05],['mass','Floor mass (t)',10,500,1],['stiffness','Storey stiffness (MN/m)',2,600,1],['damping','Damping (%)',0,25,.5]] as const;
-type Tab='Protection Lab'|'Earthquake lab'|'Build & test'|'Diagnostics'|'Simulation'|'Analytics'|'Nepal archive'|'Learn';
 const scenarios={
   'Valley benchmark':{pga:.28,hz:1.25,seconds:22,direction:0},
   'Resonance study':{pga:.15,hz:1.85,seconds:26,direction:0},
@@ -42,10 +44,14 @@ function Toggle({children,value,onClick}:{children:ReactNode;value:boolean;onCli
   return <button type="button" className={value?'toggle on':'toggle'} aria-pressed={value} onClick={onClick}>{children}</button>;
 }
 function App(){
-  const [tab,setTab]=useState<Tab>(()=>{
-    const view=new URLSearchParams(location.search).get('view');
-    return view==='analytics'?'Analytics':view==='protection'?'Protection Lab':view==='archive'?'Nepal archive':view==='earthquake'?'Earthquake lab':'Build & test';
-  });
+  const [tab,setTab]=useState<Tab>(()=>resolveRoute(location.search));
+  const [prefs,setPrefs]=useState(()=>{try{return readPrefs(localStorage.getItem('seismonepal-ui-v1'));}catch{return readPrefs(null);}});
+  const [last,setLast]=useState<Tab|null>(()=>{try{const value=localStorage.getItem('seismonepal-last-workspace');return value?resolveRoute(value):null;}catch{return null;}});
+  useEffect(()=>{
+    document.documentElement.lang=prefs.locale;
+    document.documentElement.dataset.reduceInterface=String(prefs.reduced);
+    try{localStorage.setItem('seismonepal-ui-v1',JSON.stringify(prefs));}catch{/* storage is optional */}
+  },[prefs]);
   const [researchSeed,setResearchSeed]=useState<Experiment>();
   const [legacyCharts,setLegacyCharts]=useState(false);
   const [protectionRecording,setProtectionRecording]=useState<Recording>();
@@ -54,7 +60,23 @@ function App(){
   const [earthquakeSeed,setEarthquakeSeed]=useState<{project?:Project;recording?:Recording;direction?:number;serial:number}|null>(null);
   const [showConstructor,setShowConstructor]=useState(tab==='Build & test');
   const [showEarthquake,setShowEarthquake]=useState(tab==='Earthquake lab');
-  function go(to:Tab){if(to==='Earthquake lab')setShowEarthquake(true);if(to==='Build & test')setShowConstructor(true);setTab(to);}
+  function selectTab(to:Tab){
+    if(to==='Earthquake lab')setShowEarthquake(true);
+    if(to==='Build & test')setShowConstructor(true);
+    setTab(to);
+  }
+  useEffect(()=>{
+    const pop=()=>selectTab(resolveRoute(location.search));
+    addEventListener('popstate',pop);return ()=>removeEventListener('popstate',pop);
+  },[]);
+  function go(to:Tab){
+    const next=routeUrl(to,new URL(location.href));
+    if(next.href!==location.href)history.pushState(null,'',next);
+    if(to!=='Home'&&to!=='Settings'&&to!=='About'){
+      setLast(to);try{localStorage.setItem('seismonepal-last-workspace',next.search);}catch{/* storage is optional */}
+    }
+    selectTab(to);window.scrollTo(0,0);
+  }
   function testBuilding(project:Project){
     setConstructorProject(project);
     setEarthquakeSeed(old=>({project,serial:(old?.serial??0)+1}));go('Earthquake lab');
@@ -185,20 +207,19 @@ function App(){
   const visibleSelection=selected?{building:inspectedBuilding,floor:inspectedFloor}:null;
   return <>
     <a className="skip-link" href="#workspace-content">Skip to workspace</a>
-    <header className="topbar"><a className="brand" href="#" onClick={e=>{e.preventDefault();go('Build & test')}}><img src={import.meta.env.BASE_URL+'logo.svg'} alt=""/><span>SeismoNepal <b>3D</b><small>Structural dynamics lab</small></span></a>
-      <nav aria-label="Main navigation">{(['Build & test','Earthquake lab','Diagnostics','Simulation','Analytics','Protection Lab','Nepal archive','Learn'] as Tab[]).map(item=><button key={item} aria-current={item===tab?'page':undefined} onClick={()=>go(item)}>{item}</button>)}</nav>
-      <button className="subtle theme" onClick={()=>setTheme(theme==='dark'?'light':'dark')}>{theme==='dark'?'Light mode':'Dark mode'}</button>
-    </header>
+    <Navigation route={tab} go={go} locale={prefs.locale}/>
     <main className="page" id="workspace-content" tabIndex={-1}>
+    {tab==='Home'&&<Home go={go} prefs={prefs} last={last} onProject={testBuilding}/>}
+    {(['Settings','About','Saved projects'] as Tab[]).includes(tab)&&<Page route={tab} go={go} prefs={prefs} setPrefs={setPrefs} theme={theme} setTheme={setTheme} onProject={testBuilding}/>}
     <div className="print-report">
       <h1>SeismoNepal 3D · Educational simulation report</h1>
       <p>{motion.label} {motion.source&&' · '+motion.source} · {duration.toFixed(2)} s · direction {settings.direction}° · Δt {motion.dt} s</p>
       <p>Linear elastic shear-building model for educational use. It cannot certify whether a real building is earthquake-safe.</p>
       {models.map(({building,result},i)=><section key={i}><h2>Building {i?'B':'A'} · {names[i]}</h2><p>{building.floors} floors · {building.system} · {building.foundation} foundation · {building.soil} site</p><p>Floor height {building.height} m · plan {building.width} × {building.length} m · floor mass {building.mass} t · input stiffness {building.stiffness} MN/m · input damping {building.damping}% · first mode {result.modal[0].hz.toFixed(3)} Hz</p><ul>{metrics.map(([key,label,unit,factor])=><li key={key}>{label} {(result.peaks[key]*factor).toFixed(3)} {unit}</li>)}</ul></section>)}
     </div>
-    {showConstructor&&<Suspense fallback={tab==='Build & test'?<p>Loading building constructor…</p>:null}><Constructor active={tab==='Build & test'} onContinue={testBuilding}/></Suspense>}
+    {showConstructor&&<Suspense fallback={tab==='Build & test'?<p>Loading building constructor…</p>:null}><Constructor quality={prefs.quality} active={tab==='Build & test'} onContinue={testBuilding}/></Suspense>}
     {showEarthquake&&<Suspense fallback={tab==='Earthquake lab'?<p>Loading earthquake laboratory…</p>:null}>
-      <EarthquakeLab active={tab==='Earthquake lab'} seed={earthquakeSeed} onDamage={()=>{setDamage(true);setCollapse(true);restart(false);go('Simulation');}}/>
+      <EarthquakeLab quality={prefs.quality} active={tab==='Earthquake lab'} seed={earthquakeSeed} onDamage={()=>{setDamage(true);setCollapse(true);restart(false);go('Simulation');}}/>
     </Suspense>}
     {tab==='Diagnostics'&&<Suspense fallback={<p>Loading diagnostics…</p>}><Diagnostics/></Suspense>}
     {tab==='Simulation'&&<>
@@ -259,17 +280,17 @@ function App(){
         {compare&&<p>B {(models[1].result.peaks[key]*factor).toFixed(2)} {unit} · Δ {((models[1].result.peaks[key]-models[0].result.peaks[key])*factor).toFixed(2)} {unit}</p>}</div>)}</section>
       </div></div>
     </>}
-    {tab==='Analytics'&&<>
-      <Suspense fallback={<p>Loading research analytics…</p>}><Research seed={researchSeed} legacy={{dt:motion.dt,label:motion.label,provenance:motion.source,acceleration:Float64Array.from(motion.acceleration)}}/></Suspense>
+    {(tab==='Analytics'||tab==='Research Lab')&&<>
+      <Suspense fallback={<p>Loading research analytics…</p>}><Research key={tab} initialPanel={tab==='Research Lab'?'Research sweeps':'Ground motion'} seed={researchSeed} legacy={{dt:motion.dt,label:motion.label,provenance:motion.source,acceleration:Float64Array.from(motion.acceleration)}}/></Suspense>
       <details className="research-legacy" onToggle={e=>setLegacyCharts(e.currentTarget.open)}><summary>Current Simulation charts</summary>
         {legacyCharts&&<><div className="actions"><button onClick={download}>Export current Simulation CSV</button><button onClick={()=>window.print()}>Print current Simulation report</button></div><Suspense fallback={<p>Loading charts…</p>}><Analytics {...{models,motion,clock,theme}}/></Suspense></>}
       </details>
     </>}
     {tab==='Earthquake lab'&&archiveReturn&&<button className="subtle" onClick={()=>go('Nepal archive')}>Return to selected archive event</button>}
     {tab==='Nepal archive'&&<Suspense fallback={<p>Loading earthquake catalog…</p>}><Explorer initialEvent={archiveReturn} onProtection={(recording,eventId)=>{setArchiveReturn(eventId);setProtectionRecording(recording);go('Protection Lab');}} onTransfer={(recording,direction,eventId)=>{setArchiveReturn(eventId);setEarthquakeSeed(old=>({recording,direction,serial:(old?.serial??0)+1}));go('Earthquake lab');}}/></Suspense>}
-    {tab==='Protection Lab'&&<Suspense fallback={<p>Loading Protection Lab…</p>}><ProtectionLab archiveRecording={protectionRecording} constructorConfig={constructorProject?.config} onResearch={experiment=>{setResearchSeed(experiment);go('Analytics');}}/></Suspense>}
+    {tab==='Protection Lab'&&<Suspense fallback={<p>Loading Protection Lab…</p>}><ProtectionLab archiveRecording={protectionRecording} constructorConfig={constructorProject?.config} onResearch={experiment=>{setResearchSeed(experiment);go('Research Lab');}}/></Suspense>}
     {tab==='Learn'&&<Suspense fallback={<p>Loading learning guide…</p>}><Learn/></Suspense>}
-    <footer>Educational simulation. This application cannot certify whether a real building is earthquake-safe.</footer>
+    <footer className="site-footer">{prefs.locale==='ne'?'शैक्षिक अनुकरण। यस उपकरणले भवनको सुरक्षा प्रमाणित गर्दैन।':'Educational simulation. This application cannot certify whether a real building is earthquake-safe.'}</footer>
     </main>
   </>;
 }

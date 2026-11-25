@@ -2,7 +2,7 @@ import type {Model,Storey} from '../engine';
 
 export const materials=['Concrete','Brick','Stone','Steel','Timber','Glass','Plaster','Tile','Asphalt','Soil','Gravel'] as const;
 export type Surface=typeof materials[number];
-export const presets=['Himalayan stone','Newari brick','Concrete residence','Soft storey','Modern apartment','Cross-braced frame','Shear-wall frame','Base-isolated frame'] as const;
+export const presets=['Himalayan stone','Newari brick','Concrete residence','Soft storey','Modern apartment','Cross-braced frame','Shear-wall frame','Base-isolated frame','Traditional brick','Urban commercial','Community school','Institutional hospital'] as const;
 export type Preset=typeof presets[number];
 export type Level={heightM:number;massKg:number;stiffnessNPerM:number};
 export type Config={
@@ -14,21 +14,22 @@ export type Config={
 export type Project={version:1;id:string;name:string;config:Config};
 const clone=<T>(object:T):T=>structuredClone(object);
 export function presetConfig(preset:Preset):Config{
-  const masonry=preset==='Himalayan stone'||preset==='Newari brick';
+  const masonry=preset==='Himalayan stone'||preset==='Newari brick'||preset==='Traditional brick';
   const modern=preset==='Modern apartment', stone=preset==='Himalayan stone';
-  const n=stone?2:preset==='Newari brick'?3:modern?8:5;
-  const openGround=preset==='Soft storey';
+  const school=preset==='Community school',hospital=preset==='Institutional hospital',commercial=preset==='Urban commercial';
+  const n=stone||preset==='Traditional brick'?2:preset==='Newari brick'||school?3:modern?8:commercial?6:5;
+  const openGround=preset==='Soft storey'||commercial;
   return {
-    preset,width:stone?8:modern?17:11,length:masonry?7:modern?13:9,baysX:modern?3:2,baysZ:2,
+    preset,width:stone?8:school||hospital?19:modern||commercial?17:11,length:masonry?7:modern||hospital?13:9,baysX:modern||school||hospital||commercial?3:2,baysZ:2,
     columnWidth:masonry?.32:.48,columnDepth:masonry?.32:.48,beamWidth:masonry?.26:.38,beamDepth:masonry?.27:.46,
     slab:masonry?.17:.23,wall:masonry?.28:.19,footing:.48,overhang:.65,
-    roof:masonry?'Gable':'Flat',finish:stone?'Stone':masonry?'Brick':modern?'Plaster':'Brick',
+    roof:masonry?'Gable':'Flat',finish:stone?'Stone':masonry?'Brick':modern||school||hospital?'Plaster':'Brick',
     balconies:!masonry,stairs:!masonry,openGround,glazing:stone?.35:masonry?.52:modern?.80:.67,
     entryBay:1,windows:'All sides',
     reinforcement:preset==='Cross-braced frame'?'Bracing':preset==='Shear-wall frame'?'Shear walls':'None',
     reinforcementBay:1,damping:5,isolation:preset==='Base-isolated frame',bearingMass:85000,bearingStiffness:3.5e6,
-    levels:Array.from({length:n},(_,i)=>({heightM:masonry?2.75:3.2,massKg:modern?145000:masonry?62000:85000,
-      stiffnessNPerM:openGround&&i===0?22e6:modern?135e6:masonry?32e6:preset==='Cross-braced frame'||preset==='Shear-wall frame'?115e6:75e6})),
+    levels:Array.from({length:n},(_,i)=>({heightM:masonry?2.75:3.2,massKg:modern||hospital?145000:school?110000:masonry?62000:85000,
+      stiffnessNPerM:openGround&&i===0?22e6:modern||hospital?135e6:school?90e6:masonry?32e6:preset==='Cross-braced frame'||preset==='Shear-wall frame'?115e6:75e6})),
   };
 }
 export const numberLimits={

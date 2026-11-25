@@ -19,6 +19,10 @@ npm run build
 npm run preview
 ```
 
+## Phase 7 application preview
+
+After a production build, run `npm run preview -- --host 0.0.0.0 --port 4180` for a Wi-Fi test and open the printed Network URL from a phone on the same network. Use a secure origin to verify historical-record checksums. See the [Phase 7 validation report](PHASE_7_VALIDATION_REPORT.md), [browser captures](docs/screenshots/phase-7/) and [sample A4 Gorkha report](output/pdf/gorkha-professional-a4.pdf).
+
 ## Seismic Protection Lab
 
 Open **Protection Lab** or append `?view=protection` to the local app URL. Compare up to four buildings using the same synthetic input or an original Gorkha/Dolakha station trace. Configure isolation, braces, shear walls, tuned mass or viscous dampers, then calculate and inspect synchronized response, energy, and resonance. [Engine](SEISMIC_PROTECTION_ENGINE.md) · [Validation](PHASE_5_VALIDATION_REPORT.md) · [Browser screenshots](docs/screenshots/phase-5/)

@@ -1,8 +1,9 @@
+import {projectId} from '../ui/projectId';
 import {Component,lazy,Suspense,useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {assembleModel,importCsv} from '../engine';
 import {floorDisplacement,generate,type Part} from '../constructor/geometry';
 import {presetConfig,presets,readLibrary,resize,toModel,type Config,type Level,type Project} from '../constructor/model';
-import {cameras,environments,qualities,type Options} from '../constructor/viewOptions';
+import {cameras,environments,lightings,qualities,type Options} from '../constructor/viewOptions';
 import {channels,heatChoices,heatMagnitude,heatStops,heatUnits,peakAt,scaleFor,type Heat} from './controller';
 import {defaults,forms,G,scenarios,validateMotion,type MotionSettings,type Recording} from './motion';
 import {checkedOutput,deleteScenario,listScenarios,loadScenario,readScenario,saveScenario,type Scenario} from './projects';
@@ -17,7 +18,7 @@ const Viewport=lazy(()=>import('../constructor/Viewport'));
 const ResultsChart=lazy(()=>import('./Charts').then(x=>({default:x.ResultsChart})));
 const ResonanceChart=lazy(()=>import('./Charts').then(x=>({default:x.ResonanceChart})));
 const optionsDefault:Options={view:'Architectural',camera:'Perspective',quality:'Automatic',environment:'Kathmandu neighbourhood',floor:0,gap:0,clip:.5,axis:'Depth',ghost:false,exaggeration:8,details:true};
-const fresh=(preset:Config['preset']='Concrete residence'):Project=>({version:1,id:crypto.randomUUID(),name:preset,config:presetConfig(preset)});
+const fresh=(preset:Config['preset']='Concrete residence'):Project=>({version:1,id:projectId(),name:preset,config:presetConfig(preset)});
 const labFields=[['pgaG','Target PGA (g)',0,2,.01],['duration','Duration (s)',1,120,.5],['dt','Time step (s)',.001,.1,.001],['hz','Dominant frequency (Hz)',.1,20,.01],['bandwidth','Frequency spread',0,2,.05],['seed','Random seed',0,4294967295,1],['direction','Direction (°)',0,360,1]] as const;
 function NumberInput({label,value,min,max,step,change}:{label:string;value:number;min:number;max:number;step:number;change:(n:number)=>void}){
   return <label>{label}<input type="number" key={value} defaultValue={value} min={min} max={max} step={step} onBlur={e=>{const n=e.target.valueAsNumber;const valid=Number.isFinite(n)&&n>=min&&n<=max;e.target.value=String(valid?n:value);if(valid&&n!==value)change(n);}} onKeyDown={e=>{if(e.key==='Enter')e.currentTarget.blur();}}/></label>;
@@ -43,7 +44,7 @@ function download(parts:BlobPart[],type:string,file:string){
   link.href=url;link.download=file;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 type Seed={project?:Project;recording?:Recording;direction?:number;serial:number}|null;
-export default function Simulator({active,seed,onDamage}:{active:boolean;seed:Seed;onDamage:()=>void}){
+export default function Simulator({active,seed,onDamage,quality}:{active:boolean;quality?:Options['quality'];seed:Seed;onDamage:()=>void}){
   const [a,setA]=useState<Project>(()=>fresh());
   const [b,setB]=useState<Project>(()=>fresh('Soft storey'));
   const [comparison,setComparison]=useState(false);
@@ -57,7 +58,8 @@ export default function Simulator({active,seed,onDamage}:{active:boolean;seed:Se
   const [loop,setLoop]=useState(false);
   const [volume,setVolume]=useState(.25);
   const [haptic,setHaptic]=useState(false);
-  const [options,setOptions]=useState(optionsDefault);
+  const [options,setOptions]=useState(()=>({...optionsDefault,quality:quality??optionsDefault.quality}));
+  useEffect(()=>{if(quality)setOptions(o=>({...o,quality}));},[quality]);
   const [fit,setFit]=useState(0);
   const [fps,setFps]=useState(0);
   const [lost,setLost]=useState(false);
@@ -73,7 +75,7 @@ export default function Simulator({active,seed,onDamage}:{active:boolean;seed:Se
   const [expanded,setExpanded]=useState(true);
   const [resultTab,setResultTab]=useState<'Live'|'Results'|'Resonance'>('Live');
   const [savedIds,setSavedIds]=useState<{id:string;name:string}[]>([]);
-  const [id,setId]=useState<string>(()=>crypto.randomUUID());
+  const [id,setId]=useState<string>(()=>projectId());
   const [name,setName]=useState('Earthquake study');
   const [includeResults,setIncludeResults]=useState(true);
   const [deleteId,setDeleteId]=useState<string|null>(null);
@@ -106,7 +108,7 @@ export default function Simulator({active,seed,onDamage}:{active:boolean;seed:Se
   useEffect(()=>{
     if(!seed||seed.serial===appliedSeed.current)return;
     appliedSeed.current=seed.serial;
-    setEdit(0);setFloor(0);setSelected(null);setId(crypto.randomUUID());
+    setEdit(0);setFloor(0);setSelected(null);setId(projectId());
     setResultTab('Live');run.restore(null);
     if(seed.project){
       setA(seed.project);setName(seed.project.name+' earthquake study');setSheet('Motion');
@@ -143,7 +145,7 @@ export default function Simulator({active,seed,onDamage}:{active:boolean;seed:Se
     clear();setScenario(preset);setSettings({...defaults,...choice.changes,...(preset==='Resonance'?{hz:Math.max(.1,Math.min(20,modal[0][0].hz))}:{})});
     if(preset==='Soft storey'||preset==='High damping'){
       const match=structuredClone(a);
-      match.id=crypto.randomUUID();
+      match.id=projectId();
       match.name=preset==='Soft storey'?'Reduced first-storey stiffness':'Higher damping';
       if(preset==='Soft storey'){match.config.levels[0].stiffnessNPerM*=.30;match.config.openGround=true;}
       else match.config.damping=a.config.damping>=20?30:20;
@@ -167,7 +169,7 @@ export default function Simulator({active,seed,onDamage}:{active:boolean;seed:Se
   async function persist(duplicate=false){
     try{
       const config=readScenario(JSON.stringify(configuration()));
-      const copy=duplicate?{...config,id:crypto.randomUUID(),name:config.name.slice(0,72)+' copy'}:config;
+      const copy=duplicate?{...config,id:projectId(),name:config.name.slice(0,72)+' copy'}:config;
       if(duplicate){setId(copy.id);setName(copy.name);}
       await saveScenario({...copy,output:includeResults?outcome??undefined:undefined});
       run.setNotice('Saved '+copy.name+' locally.');await refresh();
@@ -297,6 +299,7 @@ export default function Simulator({active,seed,onDamage}:{active:boolean;seed:Se
         </>}
         {sheet==='View'&&<>
           <Select label="Environment" value={options.environment} values={environments} change={environment=>setOptions(o=>({...o,environment}))}/>
+          <Select label="Lighting" value={options.lighting??'Daytime'} values={lightings} change={lighting=>setOptions(o=>({...o,lighting}))}/>
           <Select label="Graphics" value={options.quality} values={qualities} change={quality=>setOptions(o=>({...o,quality}))}/>
           <Flag label="Structural skeleton" checked={options.view==='Structural skeleton'} onChange={v=>setOptions(o=>({...o,view:v?'Structural skeleton':'Architectural'}))}/>
           <Flag label="Landscape details" checked={options.details} onChange={details=>setOptions(o=>({...o,details}))}/>

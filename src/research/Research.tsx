@@ -45,9 +45,9 @@ function axisEditor(axis:Axis,set:(axis:Axis)=>void,label:string){
     <Num label={label+' samples'} value={axis.count} min={2} max={16} step={1} set={count=>set({...axis,count})}/>
     <label><input type="checkbox" checked={axis.log} onChange={e=>set({...axis,log:e.target.checked})}/> Log spacing</label></div>;
 }
-export default function Research({seed,legacy}:{seed?:Experiment;legacy:GroundMotion}){
+export default function Research({seed,legacy,initialPanel}:{seed?:Experiment;legacy:GroundMotion;initialPanel?:Tab}){
   const [project,setProject]=useState<ResearchProject>(()=>seed?{...defaults(),name:'Protection Lab experiment',notes:seed.notes,source:'protection',variants:seed.variants}:defaults());
-  const [tab,setTab]=useState<Tab>(seed?'Comparison':'Ground motion'),[advanced,setAdvanced]=useState(false);
+  const [tab,setTab]=useState<Tab>(seed?'Comparison':initialPanel??'Ground motion'),[advanced,setAdvanced]=useState(false);
   const [records,setRecords]=useState<RecordingMeta[]>([]),[input,setInput]=useState<GroundMotion>(),[study,setStudy]=useState<Study>();
   const [busy,setBusy]=useState(false),[status,setStatus]=useState('Choose an input and run the study.'),[exampleIndex,setExample]=useState(0);
   const [caseIndex,setCase]=useState(0),[baseline,setBaseline]=useState(0),[modeIndex,setMode]=useState(0);
@@ -60,6 +60,8 @@ export default function Research({seed,legacy}:{seed?:Experiment;legacy:GroundMo
   const [saved,setSaved]=useState<ResearchProject[]>(()=>{try{return (JSON.parse(localStorage.getItem(storeKey)??'[]') as unknown[]).map(p=>readResearch(JSON.stringify(p)));}catch{return [];}});
   const [savedIndex,setSavedIndex]=useState(0),[remove,setRemove]=useState(false),[file,setFile]=useState<File>();
   const [batchRecord,setBatchRecord]=useState('us20002ejl-KTP'),[batch,setBatch]=useState<Extract<Reply,{job:'batch'}>['value']>(),[pdf,setPdf]=useState(''),[matrix,setMatrix]=useState<'M'|'K'|'C'>('K'),[mathStep,setMathStep]=useState(0),[modePlaying,setModePlaying]=useState(false);
+  const [reportFormat,setReportFormat]=useState<'Compact'|'Comprehensive'>('Comprehensive');
+  const [sections,setSections]=useState({signals:true,comparison:true,parameters:true});
   const slot=useRef(new WorkerSlot<Worker>()).current,loader=useRef<AbortController|null>(null),stage=useRef<HTMLElement>(null);
   const fullscreen=useFullscreen(stage);
   useEffect(()=>{
@@ -153,7 +155,7 @@ export default function Research({seed,legacy}:{seed?:Experiment;legacy:GroundMo
   async function makePdf(){
     if(!input||!study)return;
     const {reportPdf}=await import('./pdf');
-    const bytes=reportPdf(project.name,input,study,project.variants,project.notes);
+    const bytes=reportPdf(project.name,input,study,project.variants,project.notes,new Date(),{format:reportFormat,...sections});
     const blob=new Blob([new Uint8Array(bytes)],{type:'application/pdf'});
     setPdf(URL.createObjectURL(blob));saveBlob('seismonepal-research.pdf',blob);
   }
@@ -310,8 +312,10 @@ export default function Research({seed,legacy}:{seed?:Experiment;legacy:GroundMo
       {tab==='Export & projects'&&<>
         <div className="research-tools"><label>Export resolution<select value={exportMode} onChange={e=>setExportMode(e.target.value as typeof exportMode)}><option>Full resolution</option><option>Lightweight</option></select></label>
           <button disabled={busy} onClick={()=>void dispatch('csv')}>Download engineering CSV</button><button disabled={busy} onClick={()=>void dispatch('json')}>Download research JSON</button>
+          <label>Report format<select value={reportFormat} onChange={e=>setReportFormat(e.target.value as typeof reportFormat)}><option>Comprehensive</option><option>Compact</option></select></label>
           <button disabled={!study} onClick={()=>void makePdf()}>Generate research PDF</button>
           {metadata&&<button onClick={()=>saveBlob('metadata.json',new Blob([metadata],{type:'application/json'}))}>Download CSV metadata</button>}</div>
+        <div className="research-tools">{(Object.keys(sections) as (keyof typeof sections)[]).map(key=><label key={key}><input type="checkbox" checked={sections[key]} onChange={e=>setSections(old=>({...old,[key]:e.target.checked}))}/>{key==='signals'?'Signal charts':key==='comparison'?'Comparative time histories':'Model parameters'}</label>)}</div>
         {pdf&&<><p><a href={pdf} target="_blank" rel="noreferrer">Open generated PDF</a></p><section className="research-report-preview"><h3>SeismoNepal 3D | Research Laboratory</h3><h4>{project.name}</h4><p>{input?.label}</p><p>{input?.provenance}</p><p>Arias intensity {fmt(study?.intensity.arias)} m/s · Record duration {fmt(study?.intensity.duration)} s · {study?.cases.length} structural configurations</p><p>Linear one-axis educational response. Reports retain the station source and numerical assumptions.</p></section></>}
         <p className="research-meta">Full resolution reruns the solver and exports every integration timestamp. Lightweight output reduces rows. Case and DOF identifiers are described in the metadata.</p>
         <div className="research-tools"><label>Experiment name<input maxLength={100} value={project.name} onChange={e=>setProject(old=>({...old,name:e.target.value}))}/></label>

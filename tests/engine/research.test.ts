@@ -95,3 +95,14 @@ it('matches the closed-form SDOF unit-step spectrum independently',()=>{
   expect(result['Relative velocity']).toBeCloseTo(1/(2*Math.PI),5);
   expect(result['Absolute acceleration']).toBeCloseTo(2,5);
 });
+it('exports an A4 comparison with both selected cases in each response chart',()=>{
+  const vars=[presetVariant('Ordinary reinforced concrete'),presetVariant('Ordinary reinforced concrete')];
+  const study=analyze(motion,vars,analysisDefaults);
+  const pdf=(comparison:boolean)=>new TextDecoder().decode(reportPdf('A4 comparison',motion,study,vars,'',new Date(0),{format:'Comprehensive',comparison}));
+  const full=pdf(true);
+  expect(full).toContain('/MediaBox [0 0 594.999 841.999]');
+  expect(full).toContain('/Count 5');
+  expect(full.match(/\(Case A\) Tj/g)).toHaveLength(5);
+  expect(full.match(/\(Case B\) Tj/g)).toHaveLength(5);
+  expect(pdf(false)).not.toContain('Synchronized comparative response');
+});

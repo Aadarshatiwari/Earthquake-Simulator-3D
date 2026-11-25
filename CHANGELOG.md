@@ -47,3 +47,9 @@
 
 - Extended Analytics with response spectra, signal intensity, modal results, demand heatmaps, energy, sweeps, sensitivity and verification.
 - Added multi-record comparisons, versioned research projects, full-resolution exports, PDF reports and Protection Lab handoff.
+
+## Phase 7
+
+- Added a branded, responsive shell with a live 3D dashboard, workspace deep links, interactive onboarding, and appearance and language controls.
+- Added four Nepal-inspired presets and new environment and lighting controls in the constructor and earthquake lab.
+- Added configurable A4 comparative reports and verified the two-case Gorkha sample.

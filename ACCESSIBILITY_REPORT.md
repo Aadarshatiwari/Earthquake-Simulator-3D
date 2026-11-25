@@ -7,3 +7,7 @@
 - Fullscreen fallback is reversible with its button or Escape. Loading and calculation status are available to assistive technology through existing live regions.
 
 Keyboard focus and responsive visual layouts were spot-checked in the desktop browser. A full WCAG audit, Android TalkBack, native touch gestures, and high zoom accessibility testing remain open.
+
+## Phase 7
+
+The shell adds a skip link, visible focus, a labeled workspace disclosure, Escape dismissal, a native onboarding dialog, reduced-motion preferences and an updated document language. Browser checks covered mobile navigation, onboarding, back navigation and theme and language controls. Full assistive technology testing and a complete contrast audit remain pending.

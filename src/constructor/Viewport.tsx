@@ -14,7 +14,7 @@ import {floorDisplacement,type generate,type Part} from './geometry';
 import {qualities,type Options} from './viewOptions';
 import {channels,heatMagnitude,heatStops,storeyTransform,type Heat} from '../seismic/controller';
 type Comparison={geometry:ReturnType<typeof generate>;config:Config;selected:string|null;result:ConstructorResult|null;mode:Mode|null;onSelect:(part:Part)=>void};
-type Props={geometry:ReturnType<typeof generate>;config:Config;options:Options;selected:string|null;onSelect:(part:Part)=>void;fit:number;time:RefObject<number>;mode:Mode|null;result:ConstructorResult|null;playing:boolean;motion:'modal'|'seismic'|null;onLost:(lost:boolean)=>void;onFps:(fps:number)=>void;comparison?:Comparison;heat?:Heat;heatMax?:number;direction?:number;showGround?:boolean;reference?:boolean;waves?:boolean;frameTime?:number};
+type Props={geometry:ReturnType<typeof generate>;config:Config;options:Options;selected:string|null;onSelect:(part:Part)=>void;fit:number;time:RefObject<number>;mode:Mode|null;result:ConstructorResult|null;playing:boolean;motion:'modal'|'seismic'|null;onLost:(lost:boolean)=>void;onFps:(fps:number)=>void;comparison?:Comparison;heat?:Heat;heatMax?:number;direction?:number;showGround?:boolean;reference?:boolean;waves?:boolean;frameTime?:number;onReady?:()=>void};
 const box=new BoxGeometry(1,1,1);
 const triangle=new Shape();
 triangle.moveTo(-.5,0);triangle.lineTo(.5,0);triangle.lineTo(0,1);triangle.closePath();
@@ -87,24 +87,27 @@ function Lighting({enabled}:{enabled:boolean}){
 function Stage({options,level,footing}:{options:Options;level:number;footing:number}){
   const foundation=options.camera==='Foundation';
   const studio=foundation||options.environment==='Architectural studio'||options.environment==='Engineering lab';
-  const rural=options.environment==='Himalayan village';
-  const neighborhood=options.environment==='Kathmandu neighbourhood';
+  const rural=options.environment==='Himalayan village'||options.environment==='Himalayan foothills';
+  const neighborhood=options.environment==='Kathmandu neighbourhood'||options.environment==='Urban Nepal';
+  const terai=options.environment==='Terai plains';
+  const golden=options.lighting==='Golden hour',overcast=options.lighting==='Overcast',neutral=options.lighting==='Neutral lab';
+  const sky=studio||neutral?'#162d40':golden?'#e1a98b':overcast?'#b2c0c5':'#88aabb';
   return <>
-    <color attach="background" args={[studio?'#152731':'#91adbd']}/>
-    <fog attach="fog" args={[studio?'#152731':'#91adbd',48,230]}/>
-    <hemisphereLight args={['#e3f2ff','#9d8c75',1.45]}/>
-    <directionalLight position={[-24,40,24]} intensity={2.65} color="#fff1d7" castShadow={level>0}
+    <color attach="background" args={[sky]}/>
+    <fog attach="fog" args={[sky,48,230]}/>
+    <hemisphereLight args={[overcast?'#e4ebef':'#e3f2ff','#8c867b',overcast?2:.95]}/>
+    <directionalLight position={golden?[-42,16,26]:[-24,40,24]} intensity={overcast?.8:golden?3.2:2.65} color={golden?'#ffc993':'#fff1d7'} castShadow={level>0}
       shadow-mapSize={[512*2**(level-1),512*2**(level-1)]} shadow-camera-left={-35} shadow-camera-right={35}
       shadow-camera-top={45} shadow-camera-bottom={-35} shadow-normalBias={.06}/>
     <Lighting enabled={level>=2}/>
-    <mesh position={[0,foundation?-footing-.025:-.014,0]} rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[360,360]}/><meshStandardMaterial roughness={.95} color={studio?'#26353c':rural?'#76785d':'#787c70'}/></mesh>
+    <mesh position={[0,foundation?-footing-.025:-.014,0]} rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[360,360]}/><meshStandardMaterial roughness={.95} color={studio?'#26353c':terai?'#687b46':rural?'#697556':'#788074'}/></mesh>
     {studio&&<gridHelper args={[140,70,'#4c717f','#384e58']} position={[0,foundation?-footing-.014:.002,0]}/>}
-    {!studio&&options.details&&(neighborhood||rural)&&<>
-      <Suspense fallback={null}><Valley/></Suspense>
+    {!studio&&options.details&&(neighborhood||rural||terai)&&<>
+      {!terai&&<Suspense fallback={null}><Valley/></Suspense>}
       {neighborhood&&<><mesh position={[0,.005,20]} rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[145,7]}/><meshStandardMaterial color="#474947"/></mesh>
       {Array.from({length:17},(_,i)=><mesh key={i} position={[(i-8)*7,.011,20]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[2.4,.08]}/><meshStandardMaterial color="#d3bf95"/></mesh>)}</>}
-      {Array.from({length:rural?5:12},(_,i)=>{
-        const x=(i%6-2.5)*11,z=-30-Math.floor(i/6)*13,y=rural?2.7:3+i%5;
+      {Array.from({length:terai?4:rural?5:level===0?6:12},(_,i)=>{
+        const x=(i%6-2.5)*11,z=-30-Math.floor(i/6)*13,y=rural||terai?2.7:options.environment==='Urban Nepal'?5+i%7:3+i%5;
         return <group key={i} position={[x,0,z]}><mesh position={[0,y/2,0]} receiveShadow><boxGeometry args={[5,y,5]}/><meshStandardMaterial color={['#a78063','#b3a482','#97735d'][i%3]}/></mesh>
           <mesh position={[0,y+(rural?.30:.1),0]} rotation={[0,Math.PI/4,0]}><coneGeometry args={[3.75,rural?1.4:.4,4]}/><meshStandardMaterial color="#584739"/></mesh>
           {!rural&&Array.from({length:Math.max(1,Math.floor(y/2))},(_,j)=><group key={j} position={[0,1.1+j*1.85,0]}>
@@ -113,6 +116,11 @@ function Stage({options,level,footing}:{options:Options;level:number;footing:num
           </group>)}</group>;
       })}
     </>}
+    {!studio&&options.details&&level>0&&Array.from({length:terai?16:10},(_,i)=>{
+      const x=(i%8-3.5)*7.5,z=-19-Math.floor(i/8)*14;
+      return <group key={i} position={[x,0,z]}><mesh position={[0,1.1,0]}><cylinderGeometry args={[.1,.16,2.2,5]}/><meshStandardMaterial color="#645039"/></mesh>
+        <mesh position={[0,2.5,0]} scale={[1.2,1.55,1.2]}><icosahedronGeometry args={[.9,0]}/><meshStandardMaterial color={i%2?'#53754d':'#456545'} roughness={1}/></mesh></group>;
+    })}
     {level===3&&!foundation&&<ContactShadows position={[0,.006,0]} scale={48} opacity={.27} blur={2.1} far={9} frames={1}/>}
   </>;
 }
@@ -265,8 +273,18 @@ function FrameInvalidator({time}:{time?:number}){
   useEffect(()=>invalidate(),[time,invalidate]);
   return null;
 }
-function Monitor({active,onFps,onLost}:{active:boolean;onFps:Props['onFps'];onLost:Props['onLost']}){
+function Monitor({active,onFps,onLost,onReady}:{active:boolean;onFps:Props['onFps'];onLost:Props['onLost'];onReady?:Props['onReady']}){
   const gl=useThree(state=>state.gl);
+  useEffect(()=>{
+    if(!onReady)return;
+    let frame=0;
+    const check=()=>{
+      if(gl.info.render.triangles>0)onReady();
+      else frame=requestAnimationFrame(check);
+    };
+    frame=requestAnimationFrame(check);
+    return ()=>cancelAnimationFrame(frame);
+  },[gl,onReady]);
   const callback=useRef(onLost);
   callback.current=onLost;
   useEffect(()=>{
@@ -314,6 +332,6 @@ export default function Viewport(props:Props){
         {props.reference&&<SeismicReference time={props.time} direction={props.direction} extent={Math.max(fitGeometry.width,fitGeometry.length)} waves={Boolean(props.waves)}/>}
     <Structures props={props} spacing={spacing} level={level}/>
     <FrameInvalidator time={props.frameTime}/>
-    <Monitor active={props.playing} onFps={props.onFps} onLost={props.onLost}/>
+    <Monitor active={props.playing} onFps={props.onFps} onLost={props.onLost} onReady={props.onReady}/>
   </Canvas>;
 }

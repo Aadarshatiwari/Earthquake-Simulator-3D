@@ -1,4 +1,4 @@
-/** SI units throughout. Indices run from the lowest active DOF to the roof. */
+/** SI units throughout. Structural DOFs run from the lowest active DOF to the roof, followed by an optional device. */
 export interface Member {
   elasticModulusPa:number;
   secondMomentM4:number;
@@ -23,6 +23,8 @@ export interface Model {
   storeys:Storey[];
   damping:Damping;
   influence?:number[];
+  /** Optional independent mass, connected to a zero-based superstructure floor. */
+  attachment?:{floor:number;massKg:number;stiffnessNPerM:number;damperNsPerM:number};
   foundation?:{kind:'fixed'}|{kind:'isolation';bearing:Storey};
 }
 export interface GroundMotion {

@@ -22,3 +22,8 @@ The new laboratory plots linear floor-level quantities and contains no member st
 The Phase 4.1 terrain uses kilometre-scale elevation sampling and an approximate local projection. The relief palette and snow tint are illustrative. Catalogue depth is drawn from a modelled surface reference. Static ShakeMap contours are published shaking estimates, while station samples are local measurements. The expanding wave diagrams use illustrative velocities and are independent of the historical event clock.
 
 The Gorkha supplements contain raw acceleration and the publisher recommends sensor-response correction for engineering use. The application preserves sample values after unit conversion and does not infer velocity or position. The building response uses one horizontal axis and remains educational. Browser viewport emulation does not establish Android hardware performance.
+
+
+## Phase 5 protection experiments
+
+The protection model remains one-axis and linear elastic. Bearing types are equivalent linear representations. Brace pair assumptions omit buckling, yielding and failed connections. Continuous walls use a calibrated top-load compliance. The tuned mass is an independent horizontal oscillator, and supplemental dampers use a constant coefficient and nominal inclination. Amplified device motion is visual. No model evaluates actual bearing capacity, masonry failure, ductile detailing, residual displacement or applicable code compliance.

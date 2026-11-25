@@ -19,6 +19,10 @@ npm run build
 npm run preview
 ```
 
+## Seismic Protection Lab
+
+Open **Protection Lab** or append `?view=protection` to the local app URL. Compare up to four buildings using the same synthetic input or an original Gorkha/Dolakha station trace. Configure isolation, braces, shear walls, tuned mass or viscous dampers, then calculate and inspect synchronized response, energy, and resonance. [Engine](SEISMIC_PROTECTION_ENGINE.md) · [Validation](PHASE_5_VALIDATION_REPORT.md) · [Browser screenshots](docs/screenshots/phase-5/)
+
 ## Nepal Earthquake Archive
 
 Open **Nepal archive** or append `?view=archive` to the local app URL. Select **3D terrain** to explore Himalayan relief. Search for Gorkha and choose **Historical Earthquake Replay** for mainshock station playback, a depth profile and official shaking contours. The archive includes 293 events and 20 original recordings across four events. See the [Phase 4.1 validation report](PHASE_4_1_VALIDATION_REPORT.md), [terrain engine](NEPAL_TERRAIN_ENGINE.md) and [actual screenshots](docs/screenshots/phase-4.1/).

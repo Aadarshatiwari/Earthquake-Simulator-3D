@@ -7,6 +7,7 @@ import {experiments} from './experiments';
 import type {CameraView} from './Scene';
 import type {Recording} from './seismic/motion';
 import type {Project} from './constructor/model';
+const ProtectionLab=lazy(()=>import('./protection/ProtectionLab'));
 const EarthquakeLab=lazy(()=>import('./seismic/Simulator'));
 const Constructor=lazy(()=>import('./constructor/Constructor'));
 const Diagnostics=lazy(()=>import('./Diagnostics'));
@@ -16,7 +17,7 @@ const Explorer=lazy(()=>import('./Explorer'));
 const Learn=lazy(()=>import('./Learn'));
 const metrics=[['displacement','Peak displacement','mm',1000],['acceleration','Peak floor acceleration','g',1/G],['drift','Peak interstorey drift','%',100],['shear','Peak base shear','kN',.001]] as const;
 const dimensions=[['floors','Floors',1,20,1],['height','Floor height (m)',2,6,.05],['width','Width (m)',4,28,.5],['length','Depth (m)',4,24,.5],['column','Column width (m)',.2,1.5,.05],['beam','Beam depth (m)',.2,1.4,.05],['mass','Floor mass (t)',10,500,1],['stiffness','Storey stiffness (MN/m)',2,600,1],['damping','Damping (%)',0,25,.5]] as const;
-type Tab='Earthquake lab'|'Build & test'|'Diagnostics'|'Simulation'|'Analytics'|'Nepal archive'|'Learn';
+type Tab='Protection Lab'|'Earthquake lab'|'Build & test'|'Diagnostics'|'Simulation'|'Analytics'|'Nepal archive'|'Learn';
 const scenarios={
   'Valley benchmark':{pga:.28,hz:1.25,seconds:22,direction:0},
   'Resonance study':{pga:.15,hz:1.85,seconds:26,direction:0},
@@ -39,13 +40,19 @@ function Toggle({children,value,onClick}:{children:ReactNode;value:boolean;onCli
   return <button type="button" className={value?'toggle on':'toggle'} aria-pressed={value} onClick={onClick}>{children}</button>;
 }
 function App(){
-  const [tab,setTab]=useState<Tab>(()=>new URLSearchParams(location.search).get('view')==='archive'?'Nepal archive':new URLSearchParams(location.search).get('view')==='earthquake'?'Earthquake lab':'Build & test');
+  const [tab,setTab]=useState<Tab>(()=>{
+    const view=new URLSearchParams(location.search).get('view');
+    return view==='protection'?'Protection Lab':view==='archive'?'Nepal archive':view==='earthquake'?'Earthquake lab':'Build & test';
+  });
+  const [protectionRecording,setProtectionRecording]=useState<Recording>();
+  const [constructorProject,setConstructorProject]=useState<Project>();
   const [archiveReturn,setArchiveReturn]=useState<string>();
   const [earthquakeSeed,setEarthquakeSeed]=useState<{project?:Project;recording?:Recording;direction?:number;serial:number}|null>(null);
   const [showConstructor,setShowConstructor]=useState(tab==='Build & test');
   const [showEarthquake,setShowEarthquake]=useState(tab==='Earthquake lab');
   function go(to:Tab){if(to==='Earthquake lab')setShowEarthquake(true);if(to==='Build & test')setShowConstructor(true);setTab(to);}
   function testBuilding(project:Project){
+    setConstructorProject(project);
     setEarthquakeSeed(old=>({project,serial:(old?.serial??0)+1}));go('Earthquake lab');
   }
   const [theme,setTheme]=useState(()=>{try{return localStorage.getItem('seismonepal-theme')??'dark'}catch{return 'dark'}});
@@ -175,7 +182,7 @@ function App(){
   return <>
     <a className="skip-link" href="#workspace-content">Skip to workspace</a>
     <header className="topbar"><a className="brand" href="#" onClick={e=>{e.preventDefault();go('Build & test')}}><img src={import.meta.env.BASE_URL+'logo.svg'} alt=""/><span>SeismoNepal <b>3D</b><small>Structural dynamics lab</small></span></a>
-      <nav aria-label="Main navigation">{(['Build & test','Earthquake lab','Diagnostics','Simulation','Analytics','Nepal archive','Learn'] as Tab[]).map(item=><button key={item} aria-current={item===tab?'page':undefined} onClick={()=>go(item)}>{item}</button>)}</nav>
+      <nav aria-label="Main navigation">{(['Build & test','Earthquake lab','Diagnostics','Simulation','Analytics','Protection Lab','Nepal archive','Learn'] as Tab[]).map(item=><button key={item} aria-current={item===tab?'page':undefined} onClick={()=>go(item)}>{item}</button>)}</nav>
       <button className="subtle theme" onClick={()=>setTheme(theme==='dark'?'light':'dark')}>{theme==='dark'?'Light mode':'Dark mode'}</button>
     </header>
     <main className="page" id="workspace-content" tabIndex={-1}>
@@ -250,7 +257,8 @@ function App(){
     </>}
     {tab==='Analytics'&&<><div className="heading"><div><h1>Engineering analytics</h1><p>{motion.label} · {compare?'Building A vs. B':'Building A'}</p></div><div className="actions"><button onClick={download}>Export CSV</button><button className="primary" onClick={()=>window.print()}>Print report</button></div></div><Suspense fallback={<p>Loading charts…</p>}><Analytics {...{models,motion,clock,theme}}/></Suspense></>}
     {tab==='Earthquake lab'&&archiveReturn&&<button className="subtle" onClick={()=>go('Nepal archive')}>Return to selected archive event</button>}
-    {tab==='Nepal archive'&&<Suspense fallback={<p>Loading earthquake catalog…</p>}><Explorer initialEvent={archiveReturn} onTransfer={(recording,direction,eventId)=>{setArchiveReturn(eventId);setEarthquakeSeed(old=>({recording,direction,serial:(old?.serial??0)+1}));go('Earthquake lab');}}/></Suspense>}
+    {tab==='Nepal archive'&&<Suspense fallback={<p>Loading earthquake catalog…</p>}><Explorer initialEvent={archiveReturn} onProtection={(recording,eventId)=>{setArchiveReturn(eventId);setProtectionRecording(recording);go('Protection Lab');}} onTransfer={(recording,direction,eventId)=>{setArchiveReturn(eventId);setEarthquakeSeed(old=>({recording,direction,serial:(old?.serial??0)+1}));go('Earthquake lab');}}/></Suspense>}
+    {tab==='Protection Lab'&&<Suspense fallback={<p>Loading Protection Lab…</p>}><ProtectionLab archiveRecording={protectionRecording} constructorConfig={constructorProject?.config}/></Suspense>}
     {tab==='Learn'&&<Suspense fallback={<p>Loading learning guide…</p>}><Learn/></Suspense>}
     <footer>Educational simulation. This application cannot certify whether a real building is earthquake-safe.</footer>
     </main>

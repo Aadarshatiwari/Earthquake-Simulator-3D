@@ -35,3 +35,10 @@
 - Added 18 regional catalogue entries, four original CC BY 4.0 Gorkha mainshock station files and timestamp-aligned station comparison.
 - Added the historical replay camera flow, an interactive illustrated wave player, and archive return from the recorded-motion structural lab.
 - Added eight automated checks and documented browser captures, data provenance, and performance.
+
+
+## Phase 5 · 2026-11-25
+
+- Added the Seismic Protection Lab with up to four synchronized building cases, linear base isolation, braces, equivalent shear walls, an independent tuned mass and localized viscous damping.
+- Added solver-driven 3D inspection, transient and harmonic charts, device energy, Nepal teaching presets, lessons, offline historical motion, local saves, JSON, CSV and print reports.
+- Added analytical and numerical regressions for coupled modes, projection, time-step convergence, energy, historical comparison and playback mappings.

@@ -21,7 +21,7 @@ export function runSimulation(model:Model,motion:GroundMotion,controls:Controls=
   if(!Number.isInteger(stride))throw new Error('Output stride must be an integer.');
   if(controls.cancelled?.())throw new SimulationCancelled();
   const structure=assembleModel(model);
-  const {mass,K,C,influence,springs,height,modes}=structure,n=mass.length;
+  const {mass,K,C,influence,springs,height,modes,parent,structuralCount,isolated}=structure,n=mass.length;
   const count=Math.ceil((steps-1)/stride)+1;
   const bytes=count*(n*channels.length+8)*8;
   if(bytes>finite(controls.maxOutputBytes??32*1024*1024,'Output memory limit',128,128*1024*1024)){
@@ -33,7 +33,7 @@ export function runSimulation(model:Model,motion:GroundMotion,controls:Controls=
   const scalars=packed.subarray(channels.length*n*count);
   const scalar=(i:number)=>scalars.subarray(i*count,(i+1)*count);
   const [time,ground,baseShear,kinetic,strain,dissipation,work,residual]=Array.from({length:8},(_,i)=>scalar(i));
-  const peak={roofDisplacement:0,displacement:0,velocity:0,absoluteAcceleration:0,drift:0,baseShear:0,energyResidual:0};
+  const peak={roofDisplacement:0,displacement:0,velocity:0,absoluteAcceleration:0,drift:0,baseShear:0,energyResidual:0,superstructureDrift:0,floorAcceleration:0,roofRelativeToBase:0};
   const warnings:string[]=[];
   const important=modes.filter(m=>m.effectiveMassRatio>=.02);
   const highest=Math.max(modes[0].hz,...important.map(m=>m.hz));
@@ -79,7 +79,7 @@ export function runSimulation(model:Model,motion:GroundMotion,controls:Controls=
     let ke=0,se=0,shear=0;
     for(let i=0;i<n;i++){
       const absolute=a[i]+influence[i]*ag;
-      const relativeStorey=u[i]-(i?u[i-1]:0),drift=relativeStorey/height[i];
+      const relativeStorey=u[i]-(parent[i]>=0?u[parent[i]]:0),drift=i<structuralCount?relativeStorey/height[i]:0;
       const force=springs[i]*relativeStorey;
       ke+=.5*mass[i]*v[i]**2;
       se+=.5*force*relativeStorey;
@@ -88,6 +88,10 @@ export function runSimulation(model:Model,motion:GroundMotion,controls:Controls=
       peak.velocity=Math.max(peak.velocity,Math.abs(v[i]));
       peak.absoluteAcceleration=Math.max(peak.absoluteAcceleration,Math.abs(absolute));
       peak.drift=Math.max(peak.drift,Math.abs(drift));
+      if(i>=Number(isolated)&&i<structuralCount){
+        peak.superstructureDrift=Math.max(peak.superstructureDrift,Math.abs(drift));
+        peak.floorAcceleration=Math.max(peak.floorAcceleration,Math.abs(absolute));
+      }
       if(save){
         const j=output*n+i;
         traces.displacement[j]=u[i];traces.velocity[j]=v[i];
@@ -100,7 +104,8 @@ export function runSimulation(model:Model,motion:GroundMotion,controls:Controls=
     if(!Number.isFinite(ke+se+damped+Math.abs(external)+Math.abs(shear)))throw new Error('Nonfinite response near t = '+(step*dt).toPrecision(5)+' s. Check the inputs and reduce Δt.');
     peak.energyResidual=Math.max(peak.energyResidual,Math.abs(balance));
     peak.baseShear=Math.max(peak.baseShear,Math.abs(shear));
-    peak.roofDisplacement=Math.max(peak.roofDisplacement,Math.abs(u[n-1]));
+    peak.roofDisplacement=Math.max(peak.roofDisplacement,Math.abs(u[structuralCount-1]));
+    peak.roofRelativeToBase=Math.max(peak.roofRelativeToBase,Math.abs(u[structuralCount-1]-(isolated?u[0]:0)));
     if(save){
       time[output]=step*dt;ground[output]=ag;baseShear[output]=shear;
       kinetic[output]=ke;strain[output]=se;dissipation[output]=damped;work[output]=external;residual[output]=balance;

@@ -8,10 +8,10 @@ import {loadTrace} from './loadTrace';
 import {originDistance,secondsBetween} from './presentation';
 import type {Recording} from '../seismic/motion';
 
-type Props={event:Event;stationPick:string;stations:RecordingMeta[];onTransfer:(recording:Recording,direction:number)=>void};
+type Props={event:Event;stationPick:string;stations:RecordingMeta[];onProtection?:(recording:Recording)=>void;onTransfer:(recording:Recording,direction:number)=>void};
 type Chart='Acceleration'|'Spectrum'|'Horizontal acceleration orbit';
 const plotly=Plotly as typeof Plotly&{relayout(node:HTMLElement,layout:object):Promise<unknown>};
-export default function RecordLab({event,stationPick,stations,onTransfer}:Props){
+export default function RecordLab({event,stationPick,stations,onTransfer,onProtection}:Props){
   const select=useRef<HTMLDivElement>(null),plot=useRef<HTMLDivElement>(null);
   const [stationId,setStation]=useState(stations[0]?.id??'');
   const [comparison,setComparison]=useState('');
@@ -103,6 +103,11 @@ export default function RecordLab({event,stationPick,stations,onTransfer}:Props)
   if(!meta)return null;
   const distance=(station:RecordingMeta)=>event.lat!==null&&event.lon!==null?originDistance(event.lat,event.lon,station.latitude,station.longitude).toFixed(1)+' km':'Unavailable';
   const site=(station:RecordingMeta)=>station.station==='KTP'?'rock':['PTN','THM','TVU'].includes(station.station)?'sedimentary site':'classification unavailable';
+  const recording=():Recording|null=>trace&&horizontal(component)?{
+    label:'Recorded · '+event.name+' · '+meta.station+' · '+component,
+    provenance:(meta.source??sources.figshare)+' · '+meta.path+' · SHA-256 '+meta.sha256,
+    dt:trace.dt,samples:Array.from(trace.components[component]),
+  }:null;
   const current=trace?sampleAt(trace.components[component],trace.dt,time):0;
   return <section className="archive-card archive-record" ref={select} aria-label="Measured station recording">
     <div className="archive-section-head"><div><h2>Station replay</h2><p>Recorded acceleration · {event.name}</p></div>
@@ -133,9 +138,9 @@ export default function RecordLab({event,stationPick,stations,onTransfer}:Props)
       </div>
       <div className="archive-tools">
         <button disabled={!horizontal(component)} className="archive-primary" onClick={()=>{
-          if(!horizontal(component))return;
-          onTransfer({label:'Recorded · '+event.name+' · '+meta.station+' · '+component,provenance:(meta.source??sources.figshare)+' · '+meta.path+' · SHA-256 '+meta.sha256,dt:trace.dt,samples:Array.from(trace.components[component])},component==='NS'?90:0);
+          const input=recording();if(input)onTransfer(input,component==='NS'?90:0);
         }}>Simulate on my building</button>
+        {onProtection&&<button disabled={!horizontal(component)} onClick={()=>{const input=recording();if(input)onProtection(input);}}>Compare in Protection Lab</button>}
         {!horizontal(component)&&<span className="archive-note">Choose a horizontal component for the one-axis solver.</span>}
       </div>
     </>}

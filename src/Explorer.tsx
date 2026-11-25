@@ -29,7 +29,7 @@ async function asset<T>(name:string,signal:AbortSignal):Promise<T>{
   if(!response.ok)throw Error(name+' could not be loaded.');
   return response.json() as Promise<T>;
 }
-export default function Explorer({onTransfer,initialEvent}:{initialEvent?:string;onTransfer:(recording?:Recording,direction?:number,eventId?:string)=>void}){
+export default function Explorer({onTransfer,onProtection,initialEvent}:{onProtection?:(recording:Recording,eventId:string)=>void;initialEvent?:string;onTransfer:(recording?:Recording,direction?:number,eventId?:string)=>void}){
   const [events,setEvents]=useState<Event[]>(specialEvents);
   const [recent,setRecent]=useState<Event[]>([]);
   const [dataset,setDataset]=useState<'Archive'|'Recent'>('Archive');
@@ -209,7 +209,7 @@ export default function Explorer({onTransfer,initialEvent}:{initialEvent?:string
       <p className="archive-note"><a href={current.url}>Event reference</a>{info&&<> · <a href={info.url}>Background and impacts</a></>} · {Object.keys(products).some(s=>s.startsWith(current.id+'-'))?'Official ShakeMap contours available in 2D and 3D':'No bundled ShakeMap for this event'}. PGV and strong-shaking duration are unavailable as station measurements here.</p>
     </section>}
     {replay&&current&&<div ref={replayNode} className="archive-replay">
-      {currentStations.length>0?<Suspense fallback={<p role="status">Loading recording tools…</p>}><RecordLab key={current.id} event={current} stationPick={stationPick} stations={currentStations} onTransfer={(recording,direction)=>onTransfer(recording,direction,current.id)}/></Suspense>:
+      {currentStations.length>0?<Suspense fallback={<p role="status">Loading recording tools…</p>}><RecordLab key={current.id} event={current} stationPick={stationPick} stations={currentStations} onProtection={onProtection?recording=>onProtection(recording,current.id):undefined} onTransfer={(recording,direction)=>onTransfer(recording,direction,current.id)}/></Suspense>:
         <section className="archive-card archive-detail"><h2>Instrumental replay unavailable</h2><p className="archive-note">This archive has no source-verified time history linked to this event. You can still inspect its epicentre, catalogued depth, and any official ShakeMap.</p><button onClick={()=>onTransfer()}>Open a separate synthetic exercise</button></section>}
       <Waves/>
     </div>}

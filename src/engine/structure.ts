@@ -1,4 +1,4 @@
-import {chain,cholesky,finite} from './matrix';
+import {addLink,chain,cholesky,finite} from './matrix';
 import {modal} from './modal';
 import type {Damping,Mode,Model} from './types';
 
@@ -28,8 +28,20 @@ export function dampingCoefficients(damping:Damping,modes:Mode[]){
 }
 export function assembleModel(model:Model){
   if(!Number.isInteger(model.storeys.length)||model.storeys.length<1||model.storeys.length>20)throw new RangeError('Use 1–20 storeys.');
-  const storeys=model.foundation?.kind==='isolation'?[model.foundation.bearing,...model.storeys]:model.storeys;
+  const storeys=model.foundation?.kind==='isolation'?[model.foundation.bearing,...model.storeys]:[...model.storeys];
+  const structuralCount=storeys.length;
+  const isolated=model.foundation?.kind==='isolation';
+  const attachment=model.attachment;
+  if(attachment&&(!Number.isInteger(attachment.floor)||attachment.floor<0||attachment.floor>=model.storeys.length))throw new RangeError('Damper attachment must be on a structural floor.');
+  if(attachment)storeys.push({...attachment,heightM:1});
   const n=storeys.length;
+  const parent=Int32Array.from(storeys,(_,i)=>i===structuralCount&&attachment?attachment.floor+Number(isolated):i-1);
+  const linked=(values:Float64Array)=>{
+    if(!attachment)return chain(values);
+    const result=new Float64Array(n*n);
+    values.forEach((value,i)=>addLink(result,n,i,parent[i],value));
+    return result;
+  };
   const mass=Float64Array.from(storeys,(s,i)=>finite(s.massKg,'Mass DOF '+(i+1),.001,1e12));
   const height=Float64Array.from(storeys,(s,i)=>finite(s.heightM,'Height DOF '+(i+1),.001,1e4));
   const springs=Float64Array.from(storeys,(s,i)=>finite(s.stiffnessNPerM,'Stiffness DOF '+(i+1),.001,1e15));
@@ -45,11 +57,11 @@ export function assembleModel(model:Model){
   const influence=Float64Array.from(model.influence??Array(n).fill(1),v=>finite(v,'Ground influence',-100,100));
   if(!influence.some(x=>x!==0))throw new Error('Ground influence vector must have a nonzero entry.');
   const M=new Float64Array(n*n);mass.forEach((m,i)=>M[i*n+i]=m);
-  const K=chain(springs);
+  const K=linked(springs);
   cholesky(K,n);
   const modes=modal(K,mass,influence);
   const {alpha,beta}=dampingCoefficients(model.damping,modes);
-  const localC=chain(dashpots);
+  const localC=linked(dashpots);
   const C=K.map((k,i)=>alpha*M[i]+beta*k+localC[i]);
-  return {M,K,C,mass,height,springs,influence,modes,alpha,beta,initialDisplacement,initialVelocity,totalMassKg:mass.reduce((sum,m)=>sum+m,0)};
+  return {M,K,C,mass,height,springs,parent,structuralCount,isolated,influence,modes,alpha,beta,initialDisplacement,initialVelocity,totalMassKg:mass.reduce((sum,m)=>sum+m,0)};
 }

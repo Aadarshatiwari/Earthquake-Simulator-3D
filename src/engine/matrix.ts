@@ -10,6 +10,15 @@ export function chain(springs:Float64Array){
   });
   return matrix;
 }
+/** Assemble a rank-one spring or dashpot contribution. A negative parent denotes ground. */
+export function addLink(matrix:Float64Array,n:number,child:number,parent:number,value:number){
+  matrix[child*n+child]+=value;
+  if(parent>=0){
+    matrix[parent*n+parent]+=value;
+    matrix[child*n+parent]-=value;
+    matrix[parent*n+child]-=value;
+  }
+}
 export function dot(a:Float64Array,b:Float64Array){
   let total=0;
   for(let i=0;i<a.length;i++)total+=a[i]*b[i];

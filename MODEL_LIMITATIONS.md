@@ -15,3 +15,10 @@ SeismoNepal 3D is an educational simulator. Real-building earthquake safety requ
 ## Phase 3 playback
 
 The new laboratory plots linear floor-level quantities and contains no member stress or failure criterion. Ground movement is available for supported synthetic inputs through baseline correction and numerical integration. Imported acceleration is used without inferring ground displacement. Waves, rumble, haptic cues, and the separately accessible damage demonstration are illustrative. See [ground motion](GROUND_MOTION_ENGINE.md) and [structural visualization](STRUCTURAL_VISUALIZATION.md).
+
+
+## Historical archive and terrain
+
+The Phase 4.1 terrain uses kilometre-scale elevation sampling and an approximate local projection. The relief palette and snow tint are illustrative. Catalogue depth is drawn from a modelled surface reference. Static ShakeMap contours are published shaking estimates, while station samples are local measurements. The expanding wave diagrams use illustrative velocities and are independent of the historical event clock.
+
+The Gorkha supplements contain raw acceleration and the publisher recommends sensor-response correction for engineering use. The application preserves sample values after unit conversion and does not infer velocity or position. The building response uses one horizontal axis and remains educational. Browser viewport emulation does not establish Android hardware performance.

@@ -19,6 +19,10 @@ npm run build
 npm run preview
 ```
 
+## Nepal Earthquake Archive
+
+Open **Nepal archive** or append `?view=archive` to the local app URL. Select **3D terrain** to explore Himalayan relief. Search for Gorkha and choose **Historical Earthquake Replay** for mainshock station playback, a depth profile and official shaking contours. The archive includes 293 events and 20 original recordings across four events. See the [Phase 4.1 validation report](PHASE_4_1_VALIDATION_REPORT.md), [terrain engine](NEPAL_TERRAIN_ENGINE.md) and [actual screenshots](docs/screenshots/phase-4.1/).
+
 ## Phase 3.5 quality and performance
 
 See [quality report](PHASE_3_5_QUALITY_REPORT.md), [before-and-after performance](PERFORMANCE_OPTIMIZATION.md), [visual design](VISUAL_DESIGN_SYSTEM.md), [Android readiness](ANDROID_READINESS_REPORT.md), [accessibility](ACCESSIBILITY_REPORT.md), and [actual application captures](docs/screenshots/phase-3.5).

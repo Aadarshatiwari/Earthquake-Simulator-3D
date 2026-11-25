@@ -3,6 +3,7 @@ import L from 'leaflet';
 import type {GeoJsonObject} from 'geojson';
 import 'leaflet/dist/leaflet.css';
 import {cities,nepalBounds,type Bounds} from './geography';
+import {markerColour,markerRadius,type ColourMode} from './presentation';
 import {archiveAsset,type Event,type RecordingMeta} from './catalog';
 
 export const mapModes=['Offline','Standard','Terrain tiles','Dark','Satellite'] as const;
@@ -13,14 +14,16 @@ const tileSpecs:Partial<Record<MapMode,{url:string;attribution:string;maxZoom?:n
   Dark:{url:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',attribution:'© OpenStreetMap · © <a href="https://carto.com/attributions">CARTO</a>'},
   Satellite:{url:'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2024-10-24/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',attribution:'<a href="https://www.earthdata.nasa.gov/data/tools/gibs">NASA EOSDIS GIBS</a> · Terra MODIS · 24 Oct 2024',maxZoom:9},
 };
-type Props={events:Event[];event:Event|null;provinces:Bounds|null;districts:Bounds|null;stations:RecordingMeta[];mode:MapMode;fit:number;showDistricts:boolean;showStations:boolean;shake:string|null;chronology:number|null;onSelect:(event:Event)=>void;onDistrict:(district:string)=>void;onNotice:(value:string)=>void};
+type Props={events:Event[];event:Event|null;provinces:Bounds|null;districts:Bounds|null;stations:RecordingMeta[];mode:MapMode;fit:number;showDistricts:boolean;showStations:boolean;shake:string|null;opacity:number;colour:ColourMode;onStation:(station:string)=>void;chronology:number|null;onSelect:(event:Event)=>void;onDistrict:(district:string)=>void;onNotice:(value:string)=>void};
 const textNode=(str:string)=>{const node=document.createElement('span');node.textContent=str;return node;};
 export default function ArchiveMap(props:Props){
   const div=useRef<HTMLDivElement>(null),map=useRef<L.Map|null>(null);
   const points=useRef<L.LayerGroup|null>(null);
-  const {events,event,provinces,districts,stations,mode,fit,showDistricts,showStations,shake,chronology,onSelect,onDistrict,onNotice}=props;
-  const callbacks=useRef({onSelect,onDistrict,onNotice});
-  callbacks.current={onSelect,onDistrict,onNotice};
+  const contourLayer=useRef<L.GeoJSON|null>(null);
+  const opacityRef=useRef(.85);
+  const {events,event,provinces,districts,stations,mode,fit,showDistricts,showStations,shake,opacity,colour,chronology,onSelect,onStation,onDistrict,onNotice}=props;
+  const callbacks=useRef({onSelect,onDistrict,onNotice,onStation});
+  callbacks.current={onSelect,onDistrict,onNotice,onStation};
   useEffect(()=>{
     if(!div.current)return;
     const instance=L.map(div.current,{scrollWheelZoom:false,zoomControl:true,preferCanvas:true,minZoom:4}).fitBounds(nepalBounds,{padding:[18,20]});
@@ -50,7 +53,7 @@ export default function ArchiveMap(props:Props){
       onEachFeature:(feature,layer)=>{layer.bindTooltip(textNode(feature.properties.name),{sticky:true});layer.on('click',()=>callbacks.current.onDistrict(feature.properties.name));},
     }).addTo(geometry);
     for(const [name,lat,lon] of cities)L.circleMarker([lat,lon],{radius:2.8,fillOpacity:1,fillColor:'#c9e4e9',color:'#25394a',weight:1}).bindTooltip(textNode(name),{direction:'right'}).addTo(geometry);
-    if(showStations)for(const station of stations)L.circleMarker([station.latitude,station.longitude],{radius:4,weight:1.3,color:'#f5faff',fillColor:'#ac88ff',fillOpacity:.85}).bindTooltip(textNode('Station '+station.station)).addTo(geometry);
+    if(showStations)for(const station of stations)L.marker([station.latitude,station.longitude],{title:'Station '+station.station,icon:L.divIcon({className:'archive-station-icon',iconSize:[9,9]})}).bindTooltip(textNode('Station '+station.station)).on('click',()=>callbacks.current.onStation(station.station)).addTo(geometry);
     return ()=>{geometry.remove();};
   },[provinces,districts,showDistricts,showStations,stations,mode]);
   useEffect(()=>{
@@ -70,17 +73,18 @@ export default function ArchiveMap(props:Props){
         if(group.length>1){
           L.circleMarker(position,{radius:Math.min(15,7+Math.sqrt(group.length)),color:'#95dde1',weight:1,fillColor:'#234e61',fillOpacity:.95})
             .bindTooltip(textNode(group.length+' catalogued events')).on('click',()=>instance.setView(position,instance.getZoom()+1)).addTo(layer);
-        }else L.circleMarker(position,{radius:Math.max(4,(item.mag??4)*1.02),color:item.featured?'#ffcf8e':'#8ee6ef',weight:item.featured?1.6:1,fillColor:item.featured?'#dc935e':'#39b3ce',fillOpacity:.67})
+        }else L.circleMarker(position,{radius:markerRadius(item.mag),color:markerColour(colour,colour==='Depth'?item.depth:item.mag),weight:item.kind==='Mainshock'?2.5:1.4,dashArray:item.kind==='Aftershock'?'3 2':undefined,fillColor:markerColour(colour,colour==='Depth'?item.depth:item.mag),fillOpacity:.52})
           .bindTooltip(textNode(item.name)).on('click',()=>callbacks.current.onSelect(item)).addTo(layer);
       }
       if(event&&event.lat!==null&&event.lon!==null&&(chronology===null||event.year<=chronology))L.circleMarker([event.lat,event.lon],{radius:11,color:'#fff2cf',weight:2,fillColor:'#ef9966',fillOpacity:.87}).bindTooltip(textNode(event.name)).addTo(layer);
     }
     render();instance.on('zoomend',render);return ()=>{instance.off('zoomend',render);};
-  },[events,event,chronology]);
+  },[events,event,chronology,colour]);
   useEffect(()=>{map.current?.fitBounds(nepalBounds,{padding:[18,20]});},[fit]);
   useEffect(()=>{
     if(event?.lat!=null&&event.lon!=null)map.current?.panInside([event.lat,event.lon],{padding:[45,45]});
   },[event]);
+  useEffect(()=>{opacityRef.current=opacity;contourLayer.current?.setStyle({opacity});},[opacity]);
   useEffect(()=>{
     if(!shake)return;
     const instance=map.current;
@@ -90,11 +94,11 @@ export default function ArchiveMap(props:Props){
     fetch(archiveAsset('shakemap/'+shake+'.json'),{signal:controller.signal}).then(r=>{if(!r.ok)throw Error();return r.json();})
       .then((geo:GeoJsonObject)=>{
         if(controller.signal.aborted)return;
-        L.geoJSON(geo,{style:feature=>({weight:2,color:typeof feature?.properties?.color==='string'?feature.properties.color:'#ffc779',opacity:.91}),
+        contourLayer.current=L.geoJSON(geo,{style:feature=>({weight:2,color:typeof feature?.properties?.color==='string'?feature.properties.color:'#ffc779',opacity:opacityRef.current}),
           onEachFeature:(feature,featureLayer)=>featureLayer.bindTooltip(textNode(String(feature.properties.value??'')+' '+String(feature.properties.units??''))),
         }).addTo(layer);
       }).catch(()=>{if(!controller.signal.aborted)callbacks.current.onNotice('This contour layer could not be loaded.');});
-    return ()=>{controller.abort();layer.remove();};
+    return ()=>{controller.abort();contourLayer.current=null;layer.remove();};
   },[shake]);
   return <div className="archive-map" aria-label="Interactive Nepal earthquake map" ref={div}/>;
 }

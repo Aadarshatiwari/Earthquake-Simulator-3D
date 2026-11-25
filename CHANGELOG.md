@@ -27,3 +27,11 @@
 - Shared procedural textures across comparison buildings and reduced Low-quality texture resolution.
 - Refined theme, mobile spacing, keyboard focus, and reduced-motion behaviour. Added an in-app fullscreen fallback.
 - Captured the running app, measured before and after, and documented browser and Android verification limits.
+
+
+## Phase 4.1 · 2026-11-25
+
+- Added verified terrain render readiness, WebGL and data fallback, finer SRTM-derived relief, top-down and focus controls, depth sections, administrative geography, attributed regional active faults and 3D ShakeMap contours.
+- Added 18 regional catalogue entries, four original CC BY 4.0 Gorkha mainshock station files and timestamp-aligned station comparison.
+- Added the historical replay camera flow, an interactive illustrated wave player, and archive return from the recorded-motion structural lab.
+- Added eight automated checks and documented browser captures, data provenance, and performance.

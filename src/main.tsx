@@ -40,6 +40,7 @@ function Toggle({children,value,onClick}:{children:ReactNode;value:boolean;onCli
 }
 function App(){
   const [tab,setTab]=useState<Tab>(()=>new URLSearchParams(location.search).get('view')==='archive'?'Nepal archive':new URLSearchParams(location.search).get('view')==='earthquake'?'Earthquake lab':'Build & test');
+  const [archiveReturn,setArchiveReturn]=useState<string>();
   const [earthquakeSeed,setEarthquakeSeed]=useState<{project?:Project;recording?:Recording;direction?:number;serial:number}|null>(null);
   const [showConstructor,setShowConstructor]=useState(tab==='Build & test');
   const [showEarthquake,setShowEarthquake]=useState(tab==='Earthquake lab');
@@ -248,7 +249,8 @@ function App(){
       </div></div>
     </>}
     {tab==='Analytics'&&<><div className="heading"><div><h1>Engineering analytics</h1><p>{motion.label} · {compare?'Building A vs. B':'Building A'}</p></div><div className="actions"><button onClick={download}>Export CSV</button><button className="primary" onClick={()=>window.print()}>Print report</button></div></div><Suspense fallback={<p>Loading charts…</p>}><Analytics {...{models,motion,clock,theme}}/></Suspense></>}
-    {tab==='Nepal archive'&&<Suspense fallback={<p>Loading earthquake catalog…</p>}><Explorer onTransfer={(recording,direction)=>{setEarthquakeSeed(old=>({recording,direction,serial:(old?.serial??0)+1}));go('Earthquake lab');}}/></Suspense>}
+    {tab==='Earthquake lab'&&archiveReturn&&<button className="subtle" onClick={()=>go('Nepal archive')}>Return to selected archive event</button>}
+    {tab==='Nepal archive'&&<Suspense fallback={<p>Loading earthquake catalog…</p>}><Explorer initialEvent={archiveReturn} onTransfer={(recording,direction,eventId)=>{setArchiveReturn(eventId);setEarthquakeSeed(old=>({recording,direction,serial:(old?.serial??0)+1}));go('Earthquake lab');}}/></Suspense>}
     {tab==='Learn'&&<Suspense fallback={<p>Loading learning guide…</p>}><Learn/></Suspense>}
     <footer>Educational simulation. This application cannot certify whether a real building is earthquake-safe.</footer>
     </main>

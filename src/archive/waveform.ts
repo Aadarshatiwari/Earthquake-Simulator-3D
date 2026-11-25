@@ -4,13 +4,18 @@ export type Component=typeof components[number];
 export type Trace={dt:number;components:Record<Component,Float64Array>;pga:Record<Component,number>;duration:number};
 export function parseArrayRecord(text:string,meta:RecordingMeta):Trace{
   const rows=text.trimEnd().split(/\r?\n/);
-  const header=rows.slice(0,10);
-  if(header[1]?.split('\t').at(-1)!==meta.station||!header[9]?.includes('cm/s/s, NS/EW/UD')||rows.length-10!==meta.samples)throw Error('Recording header or sample count does not match its manifest.');
+  const takai=meta.format==='Takai2016';
+  const headerSize=takai?rows.findIndex(row=>row.includes('Acceleration(cm/s/s): North East Up'))+1:10;
+  const header=rows.slice(0,headerSize);
+  const valid=takai
+    ? headerSize>0&&header.some(row=>row.startsWith('# Station CODE')&&row.trim().split(/\s+/).at(-1)===meta.station)
+    : header[1]?.split('\t').at(-1)===meta.station&&header[9]?.includes('cm/s/s, NS/EW/UD');
+  if(!valid||rows.length-headerSize!==meta.samples)throw Error('Recording header or sample count does not match its manifest.');
   const dt=1/meta.hz;
   const result={NS:new Float64Array(meta.samples),EW:new Float64Array(meta.samples),UD:new Float64Array(meta.samples)};
   const pga={NS:0,EW:0,UD:0};
   for(let i=0;i<meta.samples;i++){
-    const fields=rows[10+i].trim().split(/\s+/);
+    const fields=rows[headerSize+i].trim().split(/\s+/);
     const values=fields.map(Number);
     if(values.length!==4||values.some(a=>!Number.isFinite(a))||Math.abs(values[0]-i*dt)>1e-6)throw Error('Invalid data row '+(i+1)+'.');
     components.forEach((channel,j)=>{

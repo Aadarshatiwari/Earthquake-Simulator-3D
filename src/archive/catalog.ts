@@ -1,5 +1,5 @@
 export type Event={id:string;name:string;place:string;year:number;date:string|null;dateText?:string;mag:number|null;magType:string|null;lat:number|null;lon:number|null;depth:number|null;intensity:number|null;source:string;url:string;kind:'Mainshock'|'Aftershock'|'Unclassified';note?:string;featured?:boolean};
-export type RecordingMeta={id:string;event:string;station:string;latitude:number;longitude:number;elevation:number;hz:number;start:string;duration:number;asset:string;sha256:string;samples:number;path:string};
+export type RecordingMeta={id:string;event:string;station:string;latitude:number;longitude:number;elevation:number;hz:number;start:string;duration:number;asset:string;sha256:string;samples:number;path:string;format?:'Takai2016';source?:string};
 export type RegionalCatalog={features:{id:string;geometry:{coordinates:number[]};properties:{place:string;mag:number;magType:string;time:number;mmi?:number}}[]};
 const usgs='https://earthquake.usgs.gov/earthquakes/eventpage/';
 const paper='https://doi.org/10.1038/s41597-022-01634-6';
@@ -8,7 +8,7 @@ const named:Record<string,{name:string;kind:Event['kind'];note?:string}>={
   iscgem904745:{name:'Bihar–Nepal earthquake',kind:'Mainshock',note:'The ISC-GEM origin is a historical reconstruction. Published studies report alternative magnitudes and locations.'},
   usp0003k6t:{name:'Udayapur earthquake',kind:'Mainshock'},
   usp000j88b:{name:'Sikkim–Nepal border earthquake',kind:'Mainshock'},
-  us20002926:{name:'Gorkha earthquake',kind:'Mainshock',note:'The mainshock has official ShakeMap contours here. The bundled Kathmandu Valley dataset covers aftershocks.'},
+  us20002926:{name:'Gorkha earthquake',kind:'Mainshock',note:'Four original Takai et al. supplements and official USGS ShakeMap contours are available.'},
   us2000292y:{name:'Gorkha sequence · 25 April aftershock',kind:'Aftershock',note:'The published Kathmandu Valley array files are linked by the UTC origin minute.'},
   us200029bt:{name:'Gorkha sequence · 26 April aftershock',kind:'Aftershock',note:'This aftershock was recorded by the permanent Kathmandu Valley stations.'},
   us20002ejl:{name:'Dolakha earthquake',kind:'Aftershock',note:'ComCat origin and magnitude appear here. The recording paper reports the same event at 07:05:20 UTC after rounding.'},

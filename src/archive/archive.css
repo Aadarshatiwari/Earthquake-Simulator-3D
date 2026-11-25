@@ -18,3 +18,12 @@
 .archive-wave-row{display:grid;grid-template-columns:100px minmax(0,1fr) 61px;gap:9px;align-items:center;padding:6px 0}.archive-wave-row progress{width:100%}.archive-replay{scroll-margin-top:8px}
 @media(max-width:850px){.archive-layout{grid-template-columns:minmax(0,1fr)}.archive-header{align-items:start;flex-direction:column}.archive-map{height:clamp(315px,49vh,500px)}.archive-events ul{max-height:264px}.archive-readings{grid-template-columns:repeat(2,minmax(0,1fr))}.archive button{min-height:44px}}
 @media(max-height:500px) and (orientation:landscape){.archive-map{height:65vh}}
+.terrain-viewport{position:relative;background:#11283a}.terrain-loading,.terrain-message{position:absolute;inset:0;display:grid;place-content:center;gap:.7rem;pointer-events:none;text-align:center;color:#e5f4fd}.terrain-loading button,.terrain-message button{pointer-events:auto}
+.terrain-ready,.terrain-event{position:absolute;z-index:1;left:.65rem;background:#112334ec;color:#d8ecf9;padding:.35rem .55rem;font-size:.75rem;border:1px solid #456079;border-radius:.4rem;pointer-events:none}.terrain-ready{bottom:.65rem}.terrain-event{top:.65rem;color:#ffdbab;max-width:calc(100% - 1.3rem)}
+.terrain-swatches{display:flex;flex-wrap:wrap;gap:.55rem .9rem;padding:.35rem .85rem .7rem;font-size:.75rem;color:var(--sub)}.terrain-swatches i{display:inline-block;width:.72rem;height:.72rem;border-radius:.15rem;margin-right:.3rem;vertical-align:middle}
+.terrain-profile{margin:.3rem .8rem .8rem;padding:.65rem;background:#0b1c2a;border:1px solid #314959;border-radius:.55rem;color:#bed9e7}.terrain-profile svg{display:block;width:100%;max-height:175px}
+.archive-wave-diagram{display:block;width:100%;max-height:200px;border:1px solid #324e64;border-radius:.6rem;margin:.7rem 0}
+@media (prefers-reduced-motion:reduce){.archive *{scroll-behavior:auto!important}}
+.archive-station-icon{transform-origin:center}.archive-station-icon::before{content:'';position:absolute;inset:1px;background:#b7a8fb;border:1px solid #f5faff;transform:rotate(45deg);border-radius:1px}
+.terrain-city{white-space:nowrap;font-size:.7rem;color:#fff;background:#102537dd;border-radius:3px;padding:1px 4px}
+.terrain-compass{position:absolute;right:.65rem;top:.65rem;display:grid;place-items:center;width:2.35rem;height:2.35rem;border:1px solid #526e84;border-radius:50%;color:#e4f5ff;background:#112334ec;font-size:.75rem;pointer-events:none}.terrain-compass span{display:block}

@@ -1,0 +1,12 @@
+GEM Global Active Faults Database
+Copyright and attribution: Global Earthquake Model Foundation, Richard Styron
+and Marco Pagani. The regional source catalogue is HimaTibetMap.
+Publication: https://doi.org/10.1177/8755293020944182
+Source data: https://github.com/GEMScienceTools/gem-global-active-faults/blob/850fd05/geojson/gem_active_faults.geojson
+
+Creative Commons Attribution-ShareAlike 4.0 International
+https://creativecommons.org/licenses/by-sa/4.0/
+
+Changes by SeismoNepal 3D: extracted regional line portions from the source,
+rounded coordinates to four decimal places, and retained selected attributes.
+This derivative dataset is distributed under CC BY-SA 4.0.

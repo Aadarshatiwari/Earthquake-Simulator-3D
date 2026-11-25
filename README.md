@@ -76,9 +76,9 @@ For an observed input, supply a station or archive reference and a uniformly sam
 
 Use **Analytics** for traces, modal results, a full per-floor CSV and a printable summary. Both buildings receive the same input history. Selecting different soil assumptions scales the motion independently at each site.
 
-## Deploy to GitHub Pages
+## Website release
 
-Push this project folder as the root of a GitHub repository on `main`. Set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**. The included workflow installs locked dependencies, runs the numerical tests, builds `dist/` and deploys the artifact to Pages. It can also be started manually from the Actions tab.
+SeismoNepal 3D is a responsive engineering website. Phase 7.2 and native development are on hold. Run the production build locally for desktop and phone testing. See the [deployment guide](WEB_DEPLOYMENT_GUIDE.md) for Cloudflare Pages preparation and the [release validation](WEB_RELEASE_VALIDATION.md) for verified results.
 
 ## Source layout
 
@@ -93,3 +93,7 @@ The scene is an original stylized Nepal-inspired town. Presets are parameter set
 ## Engineering Analytics
 
 Open **Analytics** or append ?view=analytics to the local URL. Run the verified Gorkha example, compare response metrics, and export full-resolution solver data. [Validation](PHASE_6_VALIDATION_REPORT.md) · [Sample PDF](output/pdf/gorkha-research-report.pdf)
+
+## Phase 7.1 preview
+
+See the [validation report](PHASE_7_1_VALIDATION_REPORT.md), [browser screenshots](docs/screenshots/phase-7.1/), and [final Gorkha sample report](output/pdf/gorkha-phase-7.1-final.pdf).

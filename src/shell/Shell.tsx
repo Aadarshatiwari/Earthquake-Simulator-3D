@@ -1,11 +1,11 @@
 import {lazy,Suspense,useEffect,useRef,useState} from 'react';
 import {readLibrary} from '../constructor/model';
 import type {Options} from '../constructor/viewOptions';
-import {icons,primary,routeLabel,secondary,type Locale,type Route} from './routes';
+import {icons,mobileRoutes,primary,routeLabel,secondary,type Locale,type Route} from './routes';
 const Preview=lazy(()=>import('./Preview'));
 const url=import.meta.env.BASE_URL;
 const bilingual={
-  en:{start:'Explore the workspace',newBuilding:'Create a building',welcome:'Simulate. Understand. Build resilient.',homeIntro:'Build a structural model, apply real earthquake recordings, and see how buildings respond.',settings:'Workspace settings',onboard:'Get started',next:'Next',close:'Close',more:'More',recent:'Recent building projects'},
+  en:{start:'Explore the workspace',newBuilding:'Create a building',welcome:'Simulate. Understand. Build Resilient.',homeIntro:'Build a structural model, apply real earthquake recordings, and see how buildings respond.',settings:'Workspace settings',onboard:'Get started',next:'Next',close:'Close',more:'More',recent:'Recent building projects'},
   ne:{start:'कार्यस्थल हेर्नुहोस्',newBuilding:'भवन बनाउनुहोस्',welcome:'अनुकरण गर्नुहोस्। बुझ्नुहोस्। सुरक्षित निर्माण गर्नुहोस्।',homeIntro:'भवनको नमुना बनाउनुहोस्, वास्तविक भूकम्पको अभिलेख प्रयोग गर्नुहोस् र भवनको प्रतिक्रिया हेर्नुहोस्।',settings:'कार्यस्थल सेटिङ',onboard:'सुरु गर्नुहोस्',next:'अर्को',close:'बन्द गर्नुहोस्',more:'थप',recent:'हालका भवन परियोजनाहरू'},
 };
 export function Icon({route}:{route:Route}){
@@ -21,13 +21,18 @@ export function Navigation({route,go,locale}:{route:Route;go:(r:Route)=>void;loc
     return ()=>{document.removeEventListener('keydown',key);document.removeEventListener('pointerdown',pointer);};
   },[open]);
   const item=(r:Route)=><button key={r} aria-current={route===r?'page':undefined} onClick={()=>{setOpen(false);go(r);}}><Icon route={r}/><span>{routeLabel(r,locale)}</span></button>;
+  const moreActive=!mobileRoutes.some(entry=>entry.route===route);
   return <header className="site-header"><div className="site-header-inner">
     <button className="site-brand" onClick={()=>go('Home')} aria-label="SeismoNepal 3D"><img src={url+'logo.svg'} alt=""/><span>SeismoNepal <b>3D</b></span></button>
     <nav aria-label={locale==='ne'?'मुख्य नेभिगेसन':'Main navigation'} className="site-links">{primary.map(item)}</nav>
-    <div className="site-more" ref={menu}><button ref={trigger} className="site-more-button" aria-expanded={open} aria-controls="workspace-menu" onClick={()=>setOpen(v=>!v)}><Icon route="Settings"/>{bilingual[locale].more}</button>
-      {open&&<nav id="workspace-menu" aria-label="More workspaces" className="site-menu"><div className="site-mobile-links">{primary.map(item)}</div>{secondary.map(item)}</nav>}
-    </div>
+    <nav className="site-adaptive-nav" aria-label={locale==='ne'?'कार्यस्थल नेभिगेसन':'Workspace navigation'}>
+      <div className="site-bottom-primary">{mobileRoutes.map(({route:r,...labels})=><button key={r} aria-current={route===r?'page':undefined} onClick={()=>{setOpen(false);go(r);}}><Icon route={r}/><span>{labels[locale]}</span></button>)}</div>
+      <div className="site-more" ref={menu}><button ref={trigger} className="site-more-button" data-active={moreActive} aria-expanded={open} aria-controls="workspace-menu" onClick={()=>setOpen(v=>!v)}><Icon route="Settings"/><span>{bilingual[locale].more}</span></button>
+        <nav hidden={!open} id="workspace-menu" aria-label={locale==='ne'?'थप कार्यस्थल':'More workspaces'} className="site-menu"><div className="site-mobile-links">{item('Protection Lab')}{item('Analytics')}</div>{secondary.map(item)}</nav>
+      </div>
+    </nav>
   </div></header>;
+
 }
 export type Prefs={locale:Locale;quality:Options['quality'];reduced:boolean};
 export function readPrefs(raw:string|null):Prefs{
@@ -102,6 +107,15 @@ export function Page({route,go,prefs,setPrefs,theme,setTheme,onProject}:{route:R
     <img src={url+'logo.svg'} width="84" height="84" alt=""/><h1>SeismoNepal 3D</h1><p>{bilingual[prefs.locale].welcome}</p>
     <p>{ne?'भूकम्प र संरचनात्मक गतिशीलता सिक्ने शैक्षिक प्रयोगशाला।':'An educational laboratory for Nepal earthquake records, structural response and reproducible engineering experiments.'}</p>
     <p>{ne?'यो उपकरणले भवनको सुरक्षा प्रमाणित गर्दैन।':'Simplified structural response cannot establish building safety or code compliance.'}</p>
+    <h2>{ne?'सन्दर्भ र तथ्याङ्क':'References and data'}</h2>
+    <ul>
+      <li><a href="https://doi.org/10.1038/s41597-022-01634-6">Kathmandu Valley strong-motion observations</a></li>
+      <li><a href="https://doi.org/10.6084/m9.figshare.19809052">Kathmandu Valley recording dataset</a></li>
+      <li><a href="https://doi.org/10.1186/s40623-016-0383-7">Takai et al. · Gorkha mainshock observations</a></li>
+    </ul>
+    <p>{ne?'मापन गरिएको र कृत्रिम भूकम्पीय गति छुट्टाछुट्टै देखाइन्छ।':'The archive distinguishes measured station acceleration from published shaking estimates. The simulator identifies synthetic inputs and illustrative waves separately from calculated structural response.'}</p>
+    <h2>{ne?'गोपनीयता':'Privacy'}</h2>
+    <p>{ne?'परियोजना र सेटिङ यस ब्राउजरमा सुरक्षित हुन्छन्। नक्साको लागि बाह्य सेवा प्रयोग हुन्छ।':'Saved projects and preferences live in this browser. Imported records are processed locally. Online map layers request tiles from their credited providers, and the hosting provider can log ordinary web requests.'}</p>
     <button onClick={()=>go('Learn')}>{routeLabel('Learn',prefs.locale)}</button>
   </section>;
   return <section className="site-panel settings-panel">

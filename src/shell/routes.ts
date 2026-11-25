@@ -30,3 +30,10 @@ export const icons:Record<Route,string>={
   Analytics:'M4 4v16h16M7 15l4-5 4 2 5-6','Research Lab':'M9 3h6m-5 0v6l-6 9c-1 2 0 3 2 3h12c2 0 3-1 2-3l-6-9V3M8 15h8',
   Learn:'M3 5h6l3 2 3-2h6v14h-6l-3 2-3-2H3zM12 7v14','Saved projects':'M3 6h7l2 3h9v11H3z',Settings:'M12 5V2m0 20v-3M5 12H2m20 0h-3M5 5l2 2m10 10 2 2M5 19l2-2M19 5l-2 2M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',About:'M12 10v7m0-10v1M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',Diagnostics:'M4 4h16v16H4zM7 12h3l2-5 2 10 2-5h2',Simulation:'M8 4l12 8-12 8z',
 };
+
+export const mobileRoutes=[
+  {route:'Home',en:'Home',ne:'गृह'},
+  {route:'Build & test',en:'Build',ne:'निर्माण'},
+  {route:'Earthquake lab',en:'Simulate',ne:'अनुकरण'},
+  {route:'Nepal archive',en:'Explore',ne:'अभिलेख'},
+] as const;

@@ -102,3 +102,13 @@ describe('parametric building constructor',()=>{
     expect(editHistory(undone,{...project,name:'Alternative'}).future).toEqual([]);
   });
 });
+
+
+it('keeps parapets and balcony railings outside the analytical model',()=>{
+  const config=presetConfig('Concrete residence');
+  const parts=generate(config).parts;
+  const detail=parts.filter(part=>/roof-parapet|baluster|side-guard/.test(part.id));
+  expect(detail.some(part=>part.id.includes('roof-parapet'))).toBe(true);
+  expect(detail.some(part=>part.id.includes('baluster'))).toBe(true);
+  expect(detail.every(part=>part.nonstructural)).toBe(true);
+});

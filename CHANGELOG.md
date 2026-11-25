@@ -53,3 +53,10 @@
 - Added a branded, responsive shell with a live 3D dashboard, workspace deep links, interactive onboarding, and appearance and language controls.
 - Added four Nepal-inspired presets and new environment and lighting controls in the constructor and earthquake lab.
 - Added configurable A4 comparative reports and verified the two-case Gorkha sample.
+
+## Phase 7.1 preview
+
+- Added five-item mobile navigation and shared building first-draw status and retry.
+- Grouped analytics panels and added compact recording metadata with a provenance disclosure.
+- Refined balconies and rooflines and made camera transitions respect in-app reduced motion.
+- Added executive summary, comparative table and educational disclaimer to the A4 report.

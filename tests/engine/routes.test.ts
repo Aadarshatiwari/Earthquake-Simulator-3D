@@ -1,5 +1,5 @@
 import {expect,it} from 'vitest';
-import {paths,resolveRoute,routeLabel,routeUrl} from '../../src/shell/routes';
+import {mobileRoutes,paths,resolveRoute,routeLabel,routeUrl} from '../../src/shell/routes';
 import type {Route} from '../../src/shell/routes';
 
 it('round trips every workspace URL and preserves unrelated query parameters',()=>{
@@ -13,4 +13,12 @@ it('round trips every workspace URL and preserves unrelated query parameters',()
   }
   expect(resolveRoute('?view=unknown')).toBe('Home');
   expect(current.searchParams.get('view')).toBe('archive');
+});
+
+
+it('maps each primary mobile label to its existing workspace URL',()=>{
+  const home=new URL('https://localhost/');
+  expect(mobileRoutes.map(item=>item.en)).toEqual(['Home','Build','Simulate','Explore']);
+  expect(mobileRoutes.map(item=>routeUrl(item.route,home).searchParams.get('view'))).toEqual([null,'build','earthquake','archive']);
+  expect(mobileRoutes.every(item=>/[\u0900-\u097f]/.test(item.ne))).toBe(true);
 });

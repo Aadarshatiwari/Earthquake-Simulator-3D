@@ -7,3 +7,5 @@ Rendering uses the existing Three.js, React Three Fiber and Drei dependencies. S
 ## Phase 7
 
 Application marks and exported icons are original to this project. New neighborhood and vegetation assets are procedural meshes. Existing archive datasets and recordings keep their documented attribution and terms.
+
+Phase 7.1 balcony and parapet details use original procedural geometry and the existing material library.

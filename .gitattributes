@@ -1,2 +1,4 @@
 # Source waveform hashes depend on preserving the publisher's original bytes.
 public/archive/records/* -text
+
+*.pdf binary

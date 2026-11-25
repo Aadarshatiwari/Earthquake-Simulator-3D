@@ -11,3 +11,7 @@ Keyboard focus and responsive visual layouts were spot-checked in the desktop br
 ## Phase 7
 
 The shell adds a skip link, visible focus, a labeled workspace disclosure, Escape dismissal, a native onboarding dialog, reduced-motion preferences and an updated document language. Browser checks covered mobile navigation, onboarding, back navigation and theme and language controls. Full assistive technology testing and a complete contrast audit remain pending.
+
+## Phase 7.1
+
+The mobile bar uses labeled buttons, visible current-page state, 51 CSS pixel minimum target height and safe-area padding. The More disclosure supports Escape and focus return. Camera transitions follow the reduced-motion control. Full contrast, screen-reader and WCAG testing remain open.

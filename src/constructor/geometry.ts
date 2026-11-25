@@ -83,7 +83,15 @@ export function generate(c:Config){
       const apron=c.length/2+.61;
       add('balcony','Balcony','Concrete',[0,bottom-.06,apron],[c.width*.68,.17,1.22],true);
       add('guard','Balcony','Steel',[0,bottom+.91,apron+.60],[c.width*.68,.055,.05],true);
-      for(let j=0;j<=6;j++)add('baluster-'+j,'Balcony','Steel',[(j/6-.5)*c.width*.67,bottom+.43,apron+.60],[.045,.89,.045],true);
+      const guardWidth=c.width*.67;
+      const pickets=Math.ceil(guardWidth/.23);
+      for(let j=0;j<=pickets;j++)add('baluster-'+j,'Balcony','Steel',[(j/pickets-.5)*guardWidth,bottom+.44,apron+.60],[.024,.89,.024],true);
+      add('guard-bottom','Balcony','Steel',[0,bottom+.16,apron+.60],[guardWidth,.027,.036],true);
+      add('balcony-fascia','Trim','Plaster',[0,bottom-.15,apron+.59],[c.width*.69,.085,.07],true);
+      for(const side of [-1,1]){
+        add('side-guard-'+side,'Balcony','Steel',[side*guardWidth/2,bottom+.91,apron],[.05,.055,1.2],true);
+        for(let j=0;j<5;j++)add('side-picket-'+side+'-'+j,'Balcony','Steel',[side*guardWidth/2,bottom+.44,apron-.54+j*.23],[.024,.89,.024],true);
+      }
     }
     if(c.stairs&&!last){
       const steps=14,run=Math.min(c.length*.61,4.3), rise=h/steps;
@@ -93,6 +101,14 @@ export function generate(c:Config){
     if(c.reinforcement==='Shear walls')add('shear','Shear wall','Concrete',[mid,bottom+memberHeight/2,-c.length*.30],[clear,memberHeight,c.wall]);
     if(c.reinforcement==='Bracing'){
       for(const sign of [-1,1])add('brace-'+sign,'Brace','Steel',[mid,bottom+memberHeight/2,c.length/2-.43],[.12,Math.hypot(clear,memberHeight),.12],false,[0,0,sign*Math.atan2(clear,memberHeight)]);
+    }
+    if(last&&c.roof!=='Gable'){
+      for(const side of [-1,1]){
+        add('roof-parapet-x-'+side,'Trim','Plaster',[0,top+.27,side*(c.length/2-.05)],[c.width,.54,.14],true);
+        add('roof-coping-x-'+side,'Trim','Concrete',[0,top+.55,side*(c.length/2-.05)],[c.width+.06,.065,.20],true);
+        add('roof-parapet-z-'+side,'Trim','Plaster',[side*(c.width/2-.05),top+.27,0],[.14,.54,c.length],true);
+        add('roof-coping-z-'+side,'Trim','Concrete',[side*(c.width/2-.05),top+.55,0],[.20,.065,c.length+.06],true);
+      }
     }
     if(last&&c.roof==='Gable'){
       const pitch=.33,half=c.length/2+.36;

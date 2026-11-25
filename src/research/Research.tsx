@@ -206,7 +206,9 @@ export default function Research({seed,legacy,initialPanel}:{seed?:Experiment;le
         {busy&&<button onClick={()=>{slot.close();loader.current?.abort();setBusy(false);setStatus('Calculation cancelled.');}}>Cancel job</button>}
       </div>
       <p className="research-meta" role="status">{status}</p>
-      {input&&<p className="research-meta">{input.label} · {input.acceleration.length.toLocaleString()} samples · {fmt(input.dt)} s interval{input.provenance&&' · '+input.provenance}</p>}
+      {input&&<div className="research-meta"><p>{input.label} · {input.acceleration.length.toLocaleString()} samples · {fmt((input.acceleration.length-1)*input.dt)} s · {fmt(1/input.dt)} Hz</p>
+        {input.provenance&&<details><summary>Recording provenance</summary><p style={{overflowWrap:'anywhere'}}>{input.provenance}</p></details>}
+      </div>}
       <details><summary>Structural configurations and signal settings</summary>
         <div className="research-tools"><label>Case count<select value={project.variants.length} onChange={e=>update({variants:Array.from({length:+e.target.value},(_,i)=>project.variants[i]??presetVariant(models[i]))})}>{[1,2,3,4].map(n=><option key={n}>{n}</option>)}</select></label>
         {project.variants.map((v,i)=><label key={i}>Case {i+1}<select value={v.archetype} onChange={e=>update({variants:project.variants.map((item,j)=>i===j?presetVariant(e.target.value as Archetype):item)})}>
@@ -224,7 +226,15 @@ export default function Research({seed,legacy,initialPanel}:{seed?:Experiment;le
         </div>
       </details>
     </section>
-    <nav aria-label="Analysis panels" className="research-tabs">{tabs.map(t=><button key={t} aria-pressed={tab===t} onClick={()=>setTab(t)}>{t}</button>)}</nav>
+    <nav aria-label="Analysis panels" className="research-tabs">
+      <label>Analysis tools <select value={tab} onChange={e=>setTab(e.target.value as typeof tab)}>
+        <optgroup label="Ground Motion"><option>Ground motion</option><option>Frequency</option></optgroup>
+        <optgroup label="Structural Dynamics"><option>Response spectra</option><option>Modal analysis</option></optgroup>
+        <optgroup label="Structural Response"><option>Structural response</option><option>Energy</option><option>Comparison</option></optgroup>
+        <optgroup label="Research Laboratory"><option>Research sweeps</option><option>Verification</option><option>Math lab</option></optgroup>
+        <optgroup label="Reports and Data"><option>Export &amp; projects</option></optgroup>
+      </select></label>
+    </nav>
     <section className="research-card research-panel" ref={stage}>
       <div className="research-tools"><h2>{tab}</h2><button onClick={()=>void fullscreen.toggle()}>{fullscreen.expanded?'Exit fullscreen':'Expand panel'}</button>
       {study&&<label>Active configuration<select value={caseIndex} onChange={e=>{setCase(+e.target.value);setDof(0);setMode(0);}}>{study.cases.map((r,i)=><option key={i} value={i}>{i+1} · {r.name}</option>)}</select></label>}

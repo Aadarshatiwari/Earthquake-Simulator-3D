@@ -102,7 +102,11 @@ it('exports an A4 comparison with both selected cases in each response chart',()
   const full=pdf(true);
   expect(full).toContain('/MediaBox [0 0 594.999 841.999]');
   expect(full).toContain('/Count 5');
-  expect(full.match(/\(Case A\) Tj/g)).toHaveLength(5);
-  expect(full.match(/\(Case B\) Tj/g)).toHaveLength(5);
+  expect(full).toContain('Executive summary');
+  expect(full).toContain('Table 1. Calculated structural response');
+  expect(full.match(/Educational Structural Simulation Report/g)).toHaveLength(5);
+  const charts=full.slice(full.indexOf('(Synchronized comparative response)'),full.indexOf('(Model parameters'));
+  expect(charts.match(/\(Case A\) Tj/g)).toHaveLength(5);
+  expect(charts.match(/\(Case B\) Tj/g)).toHaveLength(5);
   expect(pdf(false)).not.toContain('Synchronized comparative response');
 });

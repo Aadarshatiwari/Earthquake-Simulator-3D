@@ -2,6 +2,8 @@ import type {GroundMotion} from '../engine';
 import type {Study} from './compute';
 import type {Variant} from '../protection/model';
 
+export const educationalDisclaimer='Educational Structural Simulation Report — Not a Structural Safety Certificate.';
+
 const clean=(v:string)=>v.normalize('NFKD').replace(/[–—]/g,'-').replace(/[^\x20-\x7E]/g,' ').replace(/[\\()]/g,'\\$&');
 export type ReportOptions={format?:'Compact'|'Comprehensive';signals?:boolean;comparison?:boolean;parameters?:boolean};
 const shades=['0.04 0.43 0.58','0.75 0.33 0.09','0.38 0.27 0.68','0.08 0.45 0.28','0.63 0.18 0.36'];
@@ -63,14 +65,43 @@ export function reportPdf(title:string,input:GroundMotion,study:Study,variants:V
     const series=study.spectra.slice(0,5);
     if(series.length)graph(series.map(s=>({x:s.points.map(p=>p.period),values:s.points.map(p=>p.PSA),name:(s.ratio*100)+'% damping'})), 'Pseudo-spectral acceleration (m/s^2)','Oscillator period (s)');
   }
-  start('Structural response and numerical verification');
+  start('Executive summary and engineering results');
+  line('Executive summary',15);
+  para('Objective: compare peak structural demand and energy under the same prescribed input.');
+  para('Input: '+input.label);
   for(const [i,c] of study.cases.entries()){
-    line(String.fromCharCode(65+i)+'  '+c.name,14);
-    const r=c.run,v=variants[i];
-    para(r.structure.mass.length+' DOFs | Roof '+r.peak.roofDisplacement.toPrecision(4)+' m | Peak floor drift '+(100*r.peak.superstructureDrift).toPrecision(4)+'% | Peak floor acceleration '+r.peak.floorAcceleration.toPrecision(4)+' m/s^2');
-    para('First modes (s): '+r.structure.modes.slice(0,3).map(z=>z.period.toFixed(4)).join(', ')+' | Base reaction '+(r.peak.baseShear/1000).toPrecision(4)+' kN | Dissipation '+r.energy.dissipation.at(-1)?.toPrecision(4)+' J | Peak residual '+r.peak.energyResidual.toExponential(2)+' J');
-    const active=Object.entries(v.devices).filter(([,a])=>a===true).map(([key])=>key);
-    para('Case parameters: '+v.building.levels.length+' storeys, '+v.building.damping+'% local damping proxy; active devices: '+(active.join(', ')||'none')+'.');
+    const active=Object.entries(variants[i].devices).filter(([,value])=>value===true).map(([key])=>key);
+    para('Case '+String.fromCharCode(65+i)+': '+c.name+' | '+c.run.structure.mass.length+' DOFs | '+(active.join(', ')||'no protection devices'));
+  }
+  const baseline=study.cases[0].run;
+  for(const [i,{run}] of study.cases.entries()){
+    if(!i)continue;
+    para('Case '+String.fromCharCode(65+i)+' vs A, signed reductions: roof '+reduction(baseline.peak.roofDisplacement,run.peak.roofDisplacement)+', drift '+reduction(baseline.peak.superstructureDrift,run.peak.superstructureDrift)+', base reaction '+reduction(baseline.peak.baseShear,run.peak.baseShear)+'. Negative reductions indicate increases.');
+  }
+  line('Table 1. Calculated structural response',13);
+  const metrics:[string,(r:typeof baseline)=>number][]=[
+    ['Roof displacement (mm)',r=>r.peak.roofDisplacement*1000],
+    ['Peak interstorey drift (%)',r=>r.peak.superstructureDrift*100],
+    ['Peak floor acceleration (m/s^2)',r=>r.peak.floorAcceleration],
+    ['Peak foundation reaction (kN)',r=>r.peak.baseShear/1000],
+    ['Fundamental period (s)',r=>r.structure.modes[0]?.period??NaN],
+    ['Dissipated energy (kJ)',r=>(r.energy.dissipation.at(-1)??NaN)/1000],
+  ];
+  function row(label:string,values:string[],shade:boolean){
+    const top=y;
+    if(shade)page+='0.90 0.94 0.96 rg 44 '+(top-6)+' 516 19 re f 0.07 0.16 0.23 rg\n';
+    line(label,10,52);
+    values.forEach((value,i)=>{y=top;line(value,10,260+i*75);});
+    y=top-19;
+  }
+  row('Quantity',study.cases.map((_,i)=>'Case '+String.fromCharCode(65+i)),true);
+  metrics.forEach(([label,value],i)=>row(label,study.cases.map(c=>{
+    const result=value(c.run);
+    return Number.isFinite(result)?result.toPrecision(4):'Unavailable';
+  }),i%2===1));
+  y-=10;
+  if(study.cases.some(c=>c.run.structure.modes.some(mode=>mode.period<10*input.dt))){
+    para('Sampling caution: the input has fewer than ten samples per cycle for at least one calculated mode.');
   }
   para('Average-acceleration Newmark integration; beta = 0.25, gamma = 0.5. Linear one-axis educational model. Real building safety, nonlinear failure and code compliance are outside this model.');
   para('References: Takai et al. doi:10.1186/s40623-016-0383-7; USGS Open-File Report 2017-1008. '+notes.slice(0,240));
@@ -111,11 +142,11 @@ export function reportPdf(title:string,input:GroundMotion,study:Study,variants:V
     }
   }
   pages.push(page);
-  const objects=['<< /Type /Catalog /Pages 2 0 R >>','', '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'];
+  const objects=['<< /Type /Catalog /Pages 2 0 R >>','', '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'];
   const ids:number[]=[];
   for(const [i,content] of pages.entries()){
     const index=objects.length+1;ids.push(index);
-    const stream='q .970588 0 0 1.063131 0 0 cm\n'+content+'BT /F1 9 Tf 1 0 0 1 46 28 Tm (SeismoNepal 3D | '+(i+1)+' / '+pages.length+') Tj ET\nQ\n';
+    const stream='q .970588 0 0 1.063131 0 0 cm\n'+content+'BT /F1 9 Tf 1 0 0 1 46 28 Tm (SeismoNepal 3D | '+(i+1)+' / '+pages.length+') Tj ET\nBT /F1 8 Tf 1 0 0 1 46 13 Tm ('+educationalDisclaimer.replace('—','\\227')+') Tj ET\nQ\n';
     objects.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 594.999 841.999] /Resources << /Font << /F1 3 0 R >> >> /Contents '+(index+1)+' 0 R >>','<< /Length '+stream.length+' >>\nstream\n'+stream+'endstream');
   }
   objects[1]='<< /Type /Pages /Count '+ids.length+' /Kids ['+ids.map(i=>i+' 0 R').join(' ')+'] >>';

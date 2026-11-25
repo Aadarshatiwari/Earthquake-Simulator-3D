@@ -10,3 +10,20 @@
 @media(max-width:650px){.site-hero{grid-template-columns:minmax(0,1fr)}.site-hero-copy{padding:1.1rem}.home-preview{height:330px}.site-tile{min-height:105px}.site-header-inner{min-height:60px}.site-brand img{width:39px;height:39px}}
 @media(prefers-reduced-motion:reduce){.site-header *,.site-home *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 @media print{.site-header{display:none!important}}
+
+.site-bottom-primary,.site-menu[hidden]{display:none}
+@media(max-width:835px){
+  :root{--mobile-nav-height:calc(60px + env(safe-area-inset-bottom,0px))}
+  #workspace-content{min-width:0;padding-bottom:var(--mobile-nav-height)}
+  .site-adaptive-nav{position:fixed;z-index:1000;inset:auto 0 0;display:grid;grid-template-columns:minmax(0,4fr) minmax(0,1fr);align-items:stretch;padding:4px max(env(safe-area-inset-right),4px) calc(4px + env(safe-area-inset-bottom)) max(env(safe-area-inset-left),4px);background:var(--surface);border-top:1px solid var(--border)}
+  .site-bottom-primary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+  .site-bottom-primary button,.site-adaptive-nav .site-more-button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;min-width:0;min-height:51px;padding:3px 0;border-color:transparent;background:transparent;font-size:.72rem;white-space:normal}
+  .site-bottom-primary button[aria-current],.site-more-button[data-active=true]{color:var(--accent);background:var(--strong)}
+  .site-adaptive-nav .site-more{position:static}
+  .site-adaptive-nav .site-menu{position:fixed;top:auto;bottom:var(--mobile-nav-height);left:max(6px,env(safe-area-inset-left));right:max(6px,env(safe-area-inset-right));width:auto;max-height:calc(100dvh - var(--mobile-nav-height) - 16px);overflow:auto}
+  .site-menu button{min-height:48px}
+}
+
+.building-renderer{position:relative;width:100%;height:100%;min-width:0}
+.building-render-status{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.75rem;background:#152731;color:#f1f5f9;text-align:center;padding:1rem}
+.build-canvas .constructor-fallback,.quake-canvas .constructor-fallback{z-index:2}

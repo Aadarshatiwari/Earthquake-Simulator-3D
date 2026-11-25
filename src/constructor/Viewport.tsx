@@ -1,4 +1,4 @@
-import {lazy,Suspense,useEffect,useLayoutEffect,useMemo,useRef,type RefObject} from 'react';
+import {lazy,Suspense,useEffect,useLayoutEffect,useMemo,useRef,useState,type RefObject} from 'react';
 import {Canvas,useThree,useFrame} from '@react-three/fiber';
 import {OrbitControls,OrthographicCamera,PerspectiveCamera,ContactShadows,AdaptiveDpr} from '@react-three/drei';
 import {ACESFilmicToneMapping,Color,Mesh,MeshBasicMaterial,DoubleSide,BoxGeometry,ExtrudeGeometry,Shape,Group,InstancedMesh,MeshStandardMaterial,Object3D,Plane,PMREMGenerator,Vector3,type CanvasTexture} from 'three';
@@ -57,7 +57,8 @@ function Rig({options,geometry,fit}:{options:Options;geometry:Props['geometry'];
   useFrame(()=>{
     const control=controls.current,move=transition.current;
     if(!control||!move)return;
-    const t=matchMedia('(prefers-reduced-motion: reduce)').matches?1:Math.min(1,(performance.now()-move.started)/230),eased=t*t*(3-2*t);
+    const reduced=document.documentElement.dataset.reduceInterface==='true'||matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const t=reduced?1:Math.min(1,(performance.now()-move.started)/230),eased=t*t*(3-2*t);
     control.object.position.lerpVectors(move.start,move.end,eased);
     control.target.lerpVectors(move.targetStart,move.targetEnd,eased);
     control.update();
@@ -279,7 +280,7 @@ function Monitor({active,onFps,onLost,onReady}:{active:boolean;onFps:Props['onFp
     if(!onReady)return;
     let frame=0;
     const check=()=>{
-      if(gl.info.render.triangles>0)onReady();
+      if(gl.domElement.width>1&&gl.domElement.height>1&&gl.info.render.triangles>0)onReady();
       else frame=requestAnimationFrame(check);
     };
     frame=requestAnimationFrame(check);
@@ -326,12 +327,28 @@ export default function Viewport(props:Props){
   const second=props.comparison;
   const spacing=second?(props.geometry.width+second.geometry.width)/4+2.4:0;
   const fitGeometry=useMemo(()=>second?{...props.geometry,width:spacing*2+(props.geometry.width+second.geometry.width)/2,height:Math.max(props.geometry.height,second.geometry.height),length:Math.max(props.geometry.length,second.geometry.length)}:props.geometry,[props.geometry,second?.geometry,spacing]);
-  return <Canvas frameloop={props.playing?'always':'demand'} dpr={level===0?1:[1,level===1?1.25:level===2?1.65:2]}
+  const [ready,setReady]=useState(false);
+  const [attempt,setAttempt]=useState(0);
+  const [waiting,setWaiting]=useState(false);
+  const notifyReady=useMemo(()=>()=>{
+    setReady(true);
+    props.onReady?.();
+  },[props.onReady]);
+  useEffect(()=>{
+    if(ready)return;
+    const timer=window.setTimeout(()=>setWaiting(true),8000);
+    return ()=>window.clearTimeout(timer);
+  },[ready,attempt]);
+  return <div className="building-renderer" data-building-ready={ready}><Canvas key={attempt} frameloop={props.playing?'always':'demand'} dpr={level===0?1:[1,level===1?1.25:level===2?1.65:2]}
     shadows={level>0} gl={{antialias:true,toneMapping:ACESFilmicToneMapping,localClippingEnabled:true}} fallback={<p className="constructor-fallback">WebGL 2 is unavailable. Building configuration and project tools remain available.</p>}>
     <Stage options={props.options} level={level} footing={props.config.footing}/>{props.options.quality==='Automatic'&&<AdaptiveDpr/>}<Rig options={props.options} geometry={fitGeometry} fit={props.fit}/>
         {props.reference&&<SeismicReference time={props.time} direction={props.direction} extent={Math.max(fitGeometry.width,fitGeometry.length)} waves={Boolean(props.waves)}/>}
     <Structures props={props} spacing={spacing} level={level}/>
     <FrameInvalidator time={props.frameTime}/>
-    <Monitor active={props.playing} onFps={props.onFps} onLost={props.onLost} onReady={props.onReady}/>
-  </Canvas>;
+    <Monitor active={props.playing} onFps={props.onFps} onLost={props.onLost} onReady={notifyReady}/>
+  </Canvas>
+    {!ready&&<div role="status" className="building-render-status">
+      {waiting?<><span>The building has not rendered. Check WebGL support or retry.</span><button onClick={()=>{setWaiting(false);setAttempt(n=>n+1);}}>Retry 3D view</button></>:'Preparing interactive building…'}
+    </div>}
+  </div>;
 }

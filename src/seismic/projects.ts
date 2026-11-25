@@ -55,7 +55,7 @@ export function checkedOutput(scenario:Scenario,output:Output|undefined):Output|
   if(!Array.isArray(output.results)||output.results.length!==count||!Array.isArray(output.offsets)||output.offsets.length!==count)return null;
   for(let i=0;i<count;i++){
     const config=scenario.job.buildings[i].config,r=output.results[i],offset=Number(config.isolation),n=config.levels.length+offset;
-    if(!r||output.offsets[i]!==offset||!(r.time instanceof Float64Array)||r.time.length<2||r.time.length>12001||r.structure?.mass?.length!==n||
+    if(!r||output.offsets[i]!==offset||!(r.time instanceof Float64Array)||r.time.length<2||r.time.length>18001||r.structure?.mass?.length!==n||
       !(r.ground instanceof Float64Array)||r.ground.length!==r.time.length||!(r.baseShear instanceof Float64Array)||r.baseShear.length!==r.time.length||
       !(r.groundDisplacement instanceof Float64Array)||r.groundDisplacement.length!==r.time.length||!r.energy||!r.peak||!r.diagnostics||!Array.isArray(r.warnings))return null;
     for(const key of ['displacement','velocity','relativeAcceleration','absoluteAcceleration','interstoreyDisplacement','drift','restoringForce'] as const){

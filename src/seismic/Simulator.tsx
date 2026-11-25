@@ -42,7 +42,7 @@ function download(parts:BlobPart[],type:string,file:string){
   const url=URL.createObjectURL(new Blob(parts,{type})),link=document.createElement('a');
   link.href=url;link.download=file;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-type Seed={project:Project;serial:number}|null;
+type Seed={project?:Project;recording?:Recording;direction?:number;serial:number}|null;
 export default function Simulator({active,seed,onDamage}:{active:boolean;seed:Seed;onDamage:()=>void}){
   const [a,setA]=useState<Project>(()=>fresh());
   const [b,setB]=useState<Project>(()=>fresh('Soft storey'));
@@ -106,9 +106,18 @@ export default function Simulator({active,seed,onDamage}:{active:boolean;seed:Se
   useEffect(()=>{
     if(!seed||seed.serial===appliedSeed.current)return;
     appliedSeed.current=seed.serial;
-    setA(seed.project);setEdit(0);setFloor(0);setSelected(null);setId(crypto.randomUUID());
-    setName(seed.project.name+' earthquake study');setSheet('Motion');setResultTab('Live');
-    run.restore(null);run.setNotice('Loaded '+seed.project.name+' from Build & test.');
+    setEdit(0);setFloor(0);setSelected(null);setId(crypto.randomUUID());
+    setResultTab('Live');run.restore(null);
+    if(seed.project){
+      setA(seed.project);setName(seed.project.name+' earthquake study');setSheet('Motion');
+      run.setNotice('Loaded '+seed.project.name+' from Build & test.');
+    }else{
+      setName(seed.recording?.label??'Synthetic educational exercise');
+      setRecording(seed.recording);setScenario(seed.recording?'Custom':'Moderate amplitude');setSheet(seed.recording?'Building':'Motion');
+      setSettings({...defaults,form:seed.recording?'Imported CSV':defaults.form,direction:seed.direction??0});
+      run.setNotice(seed.recording?'Loaded '+seed.recording.label+'. Choose a building and calculate its response.':'Synthetic educational exercise. No historical record is attached.');
+    }
+
   },[seed]);
   useEffect(()=>()=>{asyncGeneration.current++;},[]);
   async function refresh(){

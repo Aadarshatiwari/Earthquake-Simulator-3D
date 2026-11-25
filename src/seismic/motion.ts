@@ -53,7 +53,7 @@ export function baselineCorrect(input:Float64Array,dt:number){
 export function makeMotion(s:MotionSettings,recording?:Recording):{motion:GroundMotion;hasGroundDisplacement:boolean}{
   validateMotion(s);
   if(s.form==='Imported CSV'){
-    if(!recording||typeof recording.label!=='string'||typeof recording.provenance!=='string'||!recording.provenance.trim()||!Array.isArray(recording.samples)||recording.samples.length<2||recording.samples.length>12001)throw Error('Import a sourced CSV with 2–12,001 samples.');
+    if(!recording||typeof recording.label!=='string'||typeof recording.provenance!=='string'||!recording.provenance.trim()||!Array.isArray(recording.samples)||recording.samples.length<2||recording.samples.length>18001)throw Error('Import a sourced CSV with 2–18,001 samples.');
     finite(recording.dt,'Recorded sample interval',1e-5,1);
     return {motion:{dt:recording.dt,label:recording.label,provenance:recording.provenance,acceleration:Float64Array.from(recording.samples,x=>finite(x,'Recorded acceleration',-1e5,1e5))} satisfies GroundMotion,hasGroundDisplacement:false};
   }

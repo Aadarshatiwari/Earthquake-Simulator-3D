@@ -1,0 +1,7 @@
+# Nepal GIS architecture
+
+The Leaflet canvas map renders seven province polygons and 77 district polygons sourced in WGS84. Nepal’s outer boundary follows the exterior of the province polygons. Present-day point-in-polygon results are approximate because the bundled shapes are simplified for display. Data are attributed to Open Knowledge Nepal under CC BY 4.0. [Source boundaries](https://localboundries.oknp.org/).
+
+The default vector map uses same-origin bundled assets. Station positions come from the recording headers. Standard, terrain, dark and satellite tiles are optional network views with attribution. The local server can serve the complete bundled archive with no internet connection. A hosted cold start without access to its origin is unsupported.
+
+The separate WebGL terrain uses a 0.25° grid sampled from SRTM from OpenTopoData. Elevation is interpolated with 3× vertical exaggeration and an approximate local horizontal projection. The marker depth is shown below a rendered elevation reference for teaching. The terrain and depth cross-section are unsuitable for surveying or subsurface interpretation. A nationwide verified geological fault layer is not included. [OpenTopoData SRTM](https://www.opentopodata.org/datasets/srtm/).

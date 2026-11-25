@@ -1,0 +1,7 @@
+# Seismic data provenance
+
+The bundled regional snapshot contains 273 ComCat events from 1900 through 2024 with preferred magnitude at least 5 in 26–31° N and 79–89° E. This query includes neighboring countries and supplies neither a complete record of Nepal earthquakes nor a uniform observation interval. Entries retain event IDs, preferred scale, coordinates, uncertainty notes where available and ComCat links. The archive includes two separately sourced pre-instrumental entries. [USGS FDSN Event API](https://earthquake.usgs.gov/fdsnws/event/1/), [ISC-GEM](https://www.isc.ac.uk/iscgem/).
+
+USGS ShakeMap Atlas provides MMI, PGA in percent g, PGV in cm/s and 0.3-second PSA in percent g for two events. These are published estimated shaking fields. The archive packages generalized contours and links to the original product. USGS-authored public-domain material may include contributions with distinct rights at the source. [USGS ShakeMap product documentation](https://ghsc.code-pages.usgs.gov/esi/shakemap/docs2020/manual4_0/ug_products.html).
+
+Geographic sources and licences are documented in [GIS architecture](NEPAL_GIS_ARCHITECTURE.md). Station file redistribution and handling are documented in [strong-motion datasets](STRONG_MOTION_DATASETS.md). `scripts/prepare-archive.py` records the transformations from downloaded source files. NEMRC, DMG and CESMD are reference resources. Their feeds and waveform holdings were not bundled.

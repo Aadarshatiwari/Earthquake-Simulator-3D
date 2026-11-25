@@ -9,7 +9,7 @@ export function solveJob(job:Job,controls:Pick<Controls,'cancelled'|'onProgress'
   const started=performance.now();
   const {motion,hasGroundDisplacement}=makeMotion(job.settings,job.recording);
   const results=job.buildings.map((building,i)=>{
-    const result=runSimulation(toModel(building.config),motion,{maxSteps:12001,onProgress:f=>controls.onProgress?.((f+i)/job.buildings.length),cancelled:controls.cancelled});
+    const result=runSimulation(toModel(building.config),motion,{maxSteps:18001,maxOutputBytes:32*1024*1024,onProgress:f=>controls.onProgress?.((f+i)/job.buildings.length),cancelled:controls.cancelled});
     return {...result,groundDisplacement:hasGroundDisplacement?groundDisplacement(motion,result.time):new Float64Array(result.time.length)};
   });
   return {results,label:motion.label,provenance:motion.provenance,hasGroundDisplacement,groundVelocity:hasGroundDisplacement?groundVelocity(motion):null,dt:motion.dt,offsets:job.buildings.map(x=>Number(x.config.isolation)),elapsedMs:performance.now()-started};

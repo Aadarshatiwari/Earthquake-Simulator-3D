@@ -1,5 +1,11 @@
 # SeismoNepal 3D
 
+**[Open the live simulator](https://aadarshatiwari.github.io/Earthquake-Simulator-3D/)**
+
+Build an interactive 3D structure, apply real earthquake recordings from Nepal, and compare how the building responds with and without seismic protection. Open the site on a phone or computer. No sign-in or installation is required.
+
+[Explore the Nepal earthquake archive](https://aadarshatiwari.github.io/Earthquake-Simulator-3D/?view=archive) · [Open the Gorkha research report](https://aadarshatiwari.github.io/Earthquake-Simulator-3D/reports/gorkha-phase-7.1-final.pdf)
+
 SeismoNepal 3D is an educational earthquake and structural dynamics lab for exploring how buildings respond to horizontal ground motion. It combines an interactive Three.js model with a linear shear-building solver, Plotly analytics and a Leaflet explorer for Nepal-region earthquakes.
 
 ## Run locally

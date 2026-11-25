@@ -85,3 +85,7 @@ Push this project folder as the root of a GitHub repository on `main`. Set **Set
 - [Mathematical model](docs/model.md) and [data sources](docs/sources.md) document the assumptions and references.
 
 The scene is an original stylized Nepal-inspired town. Presets are parameter sets for learning. The app cannot certify whether a real building is earthquake-safe. See the model documentation for assumptions and accuracy limits.
+
+## Engineering Analytics
+
+Open **Analytics** or append ?view=analytics to the local URL. Run the verified Gorkha example, compare response metrics, and export full-resolution solver data. [Validation](PHASE_6_VALIDATION_REPORT.md) · [Sample PDF](output/pdf/gorkha-research-report.pdf)

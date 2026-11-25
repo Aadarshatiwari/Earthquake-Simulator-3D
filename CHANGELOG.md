@@ -42,3 +42,8 @@
 - Added the Seismic Protection Lab with up to four synchronized building cases, linear base isolation, braces, equivalent shear walls, an independent tuned mass and localized viscous damping.
 - Added solver-driven 3D inspection, transient and harmonic charts, device energy, Nepal teaching presets, lessons, offline historical motion, local saves, JSON, CSV and print reports.
 - Added analytical and numerical regressions for coupled modes, projection, time-step convergence, energy, historical comparison and playback mappings.
+
+## Phase 6 · 2026-11-25
+
+- Extended Analytics with response spectra, signal intensity, modal results, demand heatmaps, energy, sweeps, sensitivity and verification.
+- Added multi-record comparisons, versioned research projects, full-resolution exports, PDF reports and Protection Lab handoff.

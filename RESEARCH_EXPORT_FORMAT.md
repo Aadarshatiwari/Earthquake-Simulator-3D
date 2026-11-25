@@ -1,0 +1,3 @@
+# Research export format
+
+Full-resolution CSV and schema-version-1 JSON recompute native solver rows. Each row identifies case, DOF or device, time and SI fields. CSV metadata is separately downloadable. JSON includes metadata and rows in the declared column order. Full mode uses stride 1; lightweight mode saves approximately 1,401 sample timestamps. Empty values are blank in CSV and null in JSON. A 150 MB guard and worker cancellation bound the export. The verified two-case Gorkha export produced 120,000 rows at 10,000 timestamps. Editable project JSON retains configuration, source, signal settings, sweeps and notes. An analyzed live input can be embedded for reopening.

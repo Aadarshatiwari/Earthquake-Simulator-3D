@@ -100,7 +100,7 @@ function Matrix({caseResult}:{caseResult:CaseResult}){
       <tbody>{caseResult.modes.map((m,i)=><tr key={i}><th>{i+1}</th><td>{m.hz.toFixed(4)}</td><td>{m.period.toFixed(4)}</td><td>{(m.effectiveMassRatio*100).toFixed(2)}</td></tr>)}</tbody></table></div>
   </>;
 }
-export default function ProtectionLab({archiveRecording,constructorConfig}:{archiveRecording?:Recording;constructorConfig?:Config}){
+export default function ProtectionLab({archiveRecording,constructorConfig,onResearch}:{archiveRecording?:Recording;constructorConfig?:Config;onResearch?:(experiment:Experiment)=>void}){
   const [experiment,setExperiment]=useState<Experiment>(()=>archiveRecording?{...seed(),settings:{...defaults,form:'Imported CSV'},recording:archiveRecording}:seed());
   const [active,setActive]=useState(0),[engineering,setEngineering]=useState(false),[tab,setTab]=useState<Mode>('Response');
   const [result,setResult]=useState<LabResult>();
@@ -349,7 +349,8 @@ export default function ProtectionLab({archiveRecording,constructorConfig}:{arch
         <label>Experiment notes<textarea rows={3} maxLength={2500} value={experiment.notes} onChange={e=>setExperiment(old=>({...old,notes:e.target.value}))}/></label>
         <div className="protection-actions"><button onClick={save}>Save locally</button><button onClick={()=>{try{adopt(localStorage.getItem(storageKey)??'null');}catch{setStatus('No valid local Protection Lab experiment was found.');}}}>Restore local experiment</button>
           <button onClick={()=>saveFile('seismonepal-protection.json',JSON.stringify(experiment,null,2),'application/json')}>Export JSON</button>
-          <button disabled={!result} onClick={()=>{if(result)saveFile('seismonepal-protection.csv',csv(result,variants),'text/csv');}}>Export CSV</button>
+          <button disabled={!result} onClick={()=>{if(result)saveFile('seismonepal-protection.csv',csv(result,variants),'text/csv');}}>Export lightweight CSV</button>
+          {onResearch&&<button onClick={()=>onResearch(experiment)} disabled={baselineMotion&&!recording}>Open research analytics and full export</button>}
           <button disabled={!result} onClick={()=>window.print()}>Print experiment report</button>
         </div>
         <label>Import experiment<input type="file" accept=".json,application/json" onChange={e=>setImportFile(e.target.files?.[0]??null)}/></label><button disabled={!importFile} onClick={()=>void importProject()}>Restore JSON file</button>

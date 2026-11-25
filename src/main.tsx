@@ -5,6 +5,7 @@ import {presets,systems} from './presets';
 import './style.css';
 import {experiments} from './experiments';
 import type {CameraView} from './Scene';
+import type {Experiment} from './protection/analysis';
 import type {Recording} from './seismic/motion';
 import type {Project} from './constructor/model';
 const ProtectionLab=lazy(()=>import('./protection/ProtectionLab'));
@@ -12,6 +13,7 @@ const EarthquakeLab=lazy(()=>import('./seismic/Simulator'));
 const Constructor=lazy(()=>import('./constructor/Constructor'));
 const Diagnostics=lazy(()=>import('./Diagnostics'));
 const Scene=lazy(()=>import('./Scene'));
+const Research=lazy(()=>import('./research/Research'));
 const Analytics=lazy(()=>import('./Analytics'));
 const Explorer=lazy(()=>import('./Explorer'));
 const Learn=lazy(()=>import('./Learn'));
@@ -42,8 +44,10 @@ function Toggle({children,value,onClick}:{children:ReactNode;value:boolean;onCli
 function App(){
   const [tab,setTab]=useState<Tab>(()=>{
     const view=new URLSearchParams(location.search).get('view');
-    return view==='protection'?'Protection Lab':view==='archive'?'Nepal archive':view==='earthquake'?'Earthquake lab':'Build & test';
+    return view==='analytics'?'Analytics':view==='protection'?'Protection Lab':view==='archive'?'Nepal archive':view==='earthquake'?'Earthquake lab':'Build & test';
   });
+  const [researchSeed,setResearchSeed]=useState<Experiment>();
+  const [legacyCharts,setLegacyCharts]=useState(false);
   const [protectionRecording,setProtectionRecording]=useState<Recording>();
   const [constructorProject,setConstructorProject]=useState<Project>();
   const [archiveReturn,setArchiveReturn]=useState<string>();
@@ -255,10 +259,15 @@ function App(){
         {compare&&<p>B {(models[1].result.peaks[key]*factor).toFixed(2)} {unit} · Δ {((models[1].result.peaks[key]-models[0].result.peaks[key])*factor).toFixed(2)} {unit}</p>}</div>)}</section>
       </div></div>
     </>}
-    {tab==='Analytics'&&<><div className="heading"><div><h1>Engineering analytics</h1><p>{motion.label} · {compare?'Building A vs. B':'Building A'}</p></div><div className="actions"><button onClick={download}>Export CSV</button><button className="primary" onClick={()=>window.print()}>Print report</button></div></div><Suspense fallback={<p>Loading charts…</p>}><Analytics {...{models,motion,clock,theme}}/></Suspense></>}
+    {tab==='Analytics'&&<>
+      <Suspense fallback={<p>Loading research analytics…</p>}><Research seed={researchSeed} legacy={{dt:motion.dt,label:motion.label,provenance:motion.source,acceleration:Float64Array.from(motion.acceleration)}}/></Suspense>
+      <details className="research-legacy" onToggle={e=>setLegacyCharts(e.currentTarget.open)}><summary>Current Simulation charts</summary>
+        {legacyCharts&&<><div className="actions"><button onClick={download}>Export current Simulation CSV</button><button onClick={()=>window.print()}>Print current Simulation report</button></div><Suspense fallback={<p>Loading charts…</p>}><Analytics {...{models,motion,clock,theme}}/></Suspense></>}
+      </details>
+    </>}
     {tab==='Earthquake lab'&&archiveReturn&&<button className="subtle" onClick={()=>go('Nepal archive')}>Return to selected archive event</button>}
     {tab==='Nepal archive'&&<Suspense fallback={<p>Loading earthquake catalog…</p>}><Explorer initialEvent={archiveReturn} onProtection={(recording,eventId)=>{setArchiveReturn(eventId);setProtectionRecording(recording);go('Protection Lab');}} onTransfer={(recording,direction,eventId)=>{setArchiveReturn(eventId);setEarthquakeSeed(old=>({recording,direction,serial:(old?.serial??0)+1}));go('Earthquake lab');}}/></Suspense>}
-    {tab==='Protection Lab'&&<Suspense fallback={<p>Loading Protection Lab…</p>}><ProtectionLab archiveRecording={protectionRecording} constructorConfig={constructorProject?.config}/></Suspense>}
+    {tab==='Protection Lab'&&<Suspense fallback={<p>Loading Protection Lab…</p>}><ProtectionLab archiveRecording={protectionRecording} constructorConfig={constructorProject?.config} onResearch={experiment=>{setResearchSeed(experiment);go('Analytics');}}/></Suspense>}
     {tab==='Learn'&&<Suspense fallback={<p>Loading learning guide…</p>}><Learn/></Suspense>}
     <footer>Educational simulation. This application cannot certify whether a real building is earthquake-safe.</footer>
     </main>

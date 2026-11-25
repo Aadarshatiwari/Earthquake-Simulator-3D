@@ -27,3 +27,7 @@ The Gorkha supplements contain raw acceleration and the publisher recommends sen
 ## Phase 5 protection experiments
 
 The protection model remains one-axis and linear elastic. Bearing types are equivalent linear representations. Brace pair assumptions omit buckling, yielding and failed connections. Continuous walls use a calibrated top-load compliance. The tuned mass is an independent horizontal oscillator, and supplemental dampers use a constant coefficient and nominal inclination. Amplified device motion is visual. No model evaluates actual bearing capacity, masonry failure, ductile detailing, residual displacement or applicable code compliance.
+
+## Phase 6 analytics
+
+Spectra and convergence calculations use piecewise-linear ground acceleration between recorded samples. The method cannot recover unmeasured frequency content. Fourier and spectrogram ordinates depend on window and record length. The response is one-axis and linear. Member failure and code compliance are outside the model.

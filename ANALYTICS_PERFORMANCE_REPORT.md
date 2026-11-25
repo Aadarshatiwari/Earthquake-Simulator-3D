@@ -1,0 +1,3 @@
+# Analytics performance report
+
+Node 24 on Apple M5 Pro, one warmup and five timed runs per operation. Gorkha KTP NS contained 10,000 samples. Medians in milliseconds were 66.95 for the two-case study, 43.48 for five damping spectra, 0.97 for FFT, 0.77 for STFT, 0.04 for modal assembly, 18.20 for an eight-point sweep, 130.57 for a 64-case sweep and 78.34 for full CSV serialization. PDF generation took under 2 ms. Solver arrays totalled 7.44 MB, with 23.19 MB of CSV text. These are payload sizes, not peak browser heap. The gzip main chunk increased from 83.56 kB to about 84 kB. Plotly remains a large lazy dependency. Reproduce using node --import tsx scripts/benchmark-research.ts.

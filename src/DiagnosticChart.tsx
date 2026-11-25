@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
-import Plotly from 'plotly.js-dist-min';
+import {extremaIndices} from './charts/sample';
+import Plotly from 'plotly.js-basic-dist-min';
 import {G,type EngineeringResult} from './engine';
 const charts=['Displacement','Acceleration','Storey drift','Energy balance','Energy residual','Input motion','Mass distribution','Mode shape'] as const;
 export default function DiagnosticChart({result}:{result:EngineeringResult}){
@@ -12,14 +13,12 @@ export default function DiagnosticChart({result}:{result:EngineeringResult}){
   useEffect(()=>{
     const node=plot.current;
     if(!node)return;
-    const limit=Math.max(1,Math.ceil(result.time.length/6000));
-    const samples=Array.from(result.time.keys()).filter(i=>i%limit===0||i===result.time.length-1);
-    const x=samples.map(i=>result.time[i]);
     const colors=['#50d7e6','#e5a56c','#adbcff','#94e6a8'];
     const traces:object[]=[];
     let xLabel='Time (s)',yLabel='';
     function trace(name:string,read:(i:number)=>number){
-      traces.push({x,y:samples.map(read),name,type:'scatter',mode:'lines',line:{color:colors[traces.length],width:2}});
+      const samples=extremaIndices(result.time.length,read);
+      traces.push({x:samples.map(i=>result.time[i]),y:samples.map(read),name,type:'scatter',mode:'lines',line:{color:colors[traces.length],width:2}});
     }
     if(chart==='Displacement'){
       yLabel='Relative displacement (mm)';trace('Displacement',i=>result.traces.displacement[i*n+floor]*1000);
@@ -43,7 +42,7 @@ export default function DiagnosticChart({result}:{result:EngineeringResult}){
     }
     void Plotly.react(node,traces,{
       margin:{l:76,r:25,t:21,b:69},autosize:true,paper_bgcolor:'transparent',plot_bgcolor:'transparent',font:{color:'#d1e1e6'},
-      xaxis:{title:{text:xLabel},gridcolor:'#283a43',zerolinecolor:'#45606d'},yaxis:{title:{text:yLabel},gridcolor:'#283a43',zerolinecolor:'#45606d'},
+      xaxis:{title:{text:xLabel},gridcolor:'#283a43',zerolinecolor:'#45606d',automargin:true},yaxis:{title:{text:yLabel},gridcolor:'#283a43',zerolinecolor:'#45606d',automargin:true},
       showlegend:traces.length>1,legend:{orientation:'h',y:1.15},hovermode:'x unified',
     },{responsive:true,displaylogo:false}).catch(()=>setError('Could not draw this chart.'));
   },[chart,floor,mode,n,result]);

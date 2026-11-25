@@ -34,3 +34,11 @@
   .topbar{height:auto;grid-template-columns:minmax(0,1fr) auto;padding:.65rem 1rem;gap:.6rem}
   .topbar nav{grid-column:1/-1;grid-row:2;overflow:auto}
 }
+
+.build-presets button{background:#142838}
+.build-panel summary{min-height:44px}
+@media(max-width:850px){
+  .constructor-heading{gap:9px;margin-bottom:11px}
+  .constructor-heading h1{font-size:clamp(1.55rem,5vw,2.2rem)}
+  .build-panel details[open]{max-height:min(560px,68dvh);overflow:auto;scrollbar-width:thin}
+}

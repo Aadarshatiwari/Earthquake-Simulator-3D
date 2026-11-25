@@ -3,10 +3,11 @@ import type {Surface} from './model';
 
 const specs:Record<Surface,[string,number,number]>={Concrete:['#bcb9a8',.84,.02],Brick:['#984e39',.83,.02],Stone:['#8b8573',.94,0],Steel:['#5c777e',.34,.73],Timber:['#5e3726',.74,0],Glass:['#5b879a',.23,.35],Plaster:['#e5d9bd',.88,0],Tile:['#8c4435',.86,0],Asphalt:['#464741',.95,0],Soil:['#75654c',1,0],Gravel:['#827e6c',.97,0]};
 export const surfaceSpec=(surface:Surface)=>specs[surface];
-export function makeSurface(surface:Surface){
+export function makeSurface(surface:Surface,size=128){
   const canvas=document.createElement('canvas');
-  canvas.width=canvas.height=128;
+  canvas.width=canvas.height=size;
   const ctx=canvas.getContext('2d')!;
+  ctx.scale(size/128,size/128);
   const [base]=specs[surface];
   ctx.fillStyle=base;ctx.fillRect(0,0,128,128);
   let state=1773;

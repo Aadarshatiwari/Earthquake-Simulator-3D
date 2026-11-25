@@ -19,6 +19,10 @@ npm run build
 npm run preview
 ```
 
+## Phase 3.5 quality and performance
+
+See [quality report](PHASE_3_5_QUALITY_REPORT.md), [before-and-after performance](PERFORMANCE_OPTIMIZATION.md), [visual design](VISUAL_DESIGN_SYSTEM.md), [Android readiness](ANDROID_READINESS_REPORT.md), [accessibility](ACCESSIBILITY_REPORT.md), and [actual application captures](docs/screenshots/phase-3.5).
+
 ## Phase 3 earthquake laboratory
 
 Choose **Earthquake lab** or use **Continue to simulation** from a constructed building. Select a motion and **Calculate response**, then start playback. Try the Soft storey comparison or the Resonance tab to compare configurations. Sourced acceleration CSV, browser-local run storage and numerical CSV export are available from the lab.

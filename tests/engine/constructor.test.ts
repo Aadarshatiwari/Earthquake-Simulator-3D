@@ -36,6 +36,20 @@ describe('parametric building constructor',()=>{
       if(p==='Base-isolated frame')expect(b.parts.some(part=>part.type==='Bearing')).toBe(true);
     }
   });
+  it('slopes both pitched roof panels upward toward a common ridge',()=>{
+    const building=generate(presetConfig('Newari brick'));
+    const roofs=building.parts.filter(part=>part.id.includes('/pitch-'));
+    expect(roofs).toHaveLength(2);
+    const ridge=roofs.map(part=>{
+      const [,,z]=part.center;
+      const a=part.rotation![0];
+      const ridgeLocalZ=-z/Math.cos(a);
+      return part.center[1]-Math.sin(a)*ridgeLocalZ;
+    });
+    expect(ridge[0]).toBeCloseTo(ridge[1],12);
+    expect(ridge[0]).toBeCloseTo(building.height,12);
+    expect(ridge[0]).toBeGreaterThan(roofs[0].center[1]);
+  });
   it('rejects incompatible bays, dimensions, members, and invalid inputs',()=>{
     for(const config of [{...base,baysX:5,width:4},{...base,beamWidth:1},{...base,entryBay:4},{...base,length:NaN},
       {...base,levels:[]},{...base,finish:'fake'},{...base,levels:[{heightM:3,massKg:0,stiffnessNPerM:1e6}]}])expect(()=>validateConfig(config)).toThrow();

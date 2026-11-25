@@ -1,0 +1,5 @@
+# Phase 3.5 Android readiness
+
+Browser viewport checks at 360×800, 390×844, 412×915, 768×1024, and 844×390 showed no page-level horizontal overflow. Portrait and landscape screenshots are desktop browser emulations and are labelled accordingly. Compact mobile controls, safe-area styling, collapsible configuration, and an in-app fullscreen fallback are available.
+
+The development machine had no Android Studio, emulator or adb available to this task. No large development tools were installed. The following require physical or emulator verification: Android WebView WebGL and worker startup, pinch/orbit gestures, orientation and system back handling, lifecycle pause/resume, offline first launch from packaged assets, native CSV/JSON file input and downloads, IndexedDB quota persistence, accessibility, low-memory recovery, haptics, audio, thermal stability and sustained FPS. Existing visibility pause and offline core design reduce integration work, but desktop measurements do not certify the Android targets.

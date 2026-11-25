@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import Plotly from 'plotly.js-dist-min';
+import {extremaIndices} from './charts/sample';
+import Plotly from 'plotly.js-basic-dist-min';
 import {G,responseSpectrum,type Building,type Motion,type Result} from './solver';
 
 type Model={building:Building;result:Result};
@@ -50,7 +51,8 @@ export default function Analytics({models,motion,clock,theme}:{models:Model[];mo
         y=result.samples.map(s=>s[key][f]*factor);units=label;
         traceName+=' · floor '+(f+1);
       }
-      return {x,y,axis,units,traceName};
+      const visible=extremaIndices(y.length,i=>y[i]);
+      return {x:visible.map(i=>x[i]),y:visible.map(i=>y[i]),axis,units,traceName};
     });
   },[models,motion,floor,mode,chart,spectralDamping]);
   useEffect(()=>{
@@ -65,7 +67,15 @@ export default function Analytics({models,motion,clock,theme}:{models:Model[];mo
       shapes:timed?[{type:'line',xref:'x',yref:'paper',x0:clock,x1:clock,y0:0,y1:1,line:{color:foreground,width:1,dash:'dot'}}]:[]
     },{responsive:true,displaylogo:false,scrollZoom:true}).catch(()=>setError('The chart could not be rendered.'));
   },[data,chart,clock,theme,colors[0],colors[1]]);
-  useEffect(()=>{const element=plot.current;return ()=>{if(element)Plotly.purge(element)}},[]);
+  useEffect(()=>{
+    const element=plot.current;
+    if(!element)return;
+    const observer=new ResizeObserver(()=>{
+      if(element.clientWidth&&element.querySelector('.main-svg'))void Plotly.Plots.resize(element).catch(()=>{});
+    });
+    observer.observe(element);
+    return ()=>{observer.disconnect();Plotly.purge(element);};
+  },[]);
   return <><section className="panel analytics"><div className="chart-toolbar"><label>Analysis <select value={chart} onChange={e=>setChart(e.target.value as Chart)}>{chartTypes.map(key=><option key={key}>{key}</option>)}</select></label>
   {chart in channels&&<label>Floor <select value={floor} onChange={e=>setFloor(+e.target.value)}><option value={0}>Each roof</option>{Array.from({length:Math.max(...models.map(m=>m.building.floors))},(_,i)=><option value={i+1} key={i}>{i+1}</option>)}</select></label>}
   {chart==='Response spectrum'&&<label>Oscillator damping <select value={spectralDamping} onChange={e=>setSpectralDamping(+e.target.value)}>{[2,5,10,20].map(n=><option value={n} key={n}>{n}%</option>)}</select></label>}

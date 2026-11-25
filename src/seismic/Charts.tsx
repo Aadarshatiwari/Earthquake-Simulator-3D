@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import Plotly from 'plotly.js-dist-min';
+import {extremaIndices} from '../charts/sample';
+import Plotly from 'plotly.js-basic-dist-min';
 import type {Output} from './jobs';
 import {resonanceCurve} from './resonance';
 import type {Model} from '../engine';
@@ -25,9 +26,9 @@ function Plot({series,xLabel,yLabel,cursor,seek}:Layout){
     const click=(event:{points?:{x?:number}[]})=>{
       const time=event.points?.[0]?.x;if(typeof time==='number')select.current?.(time);
     };
-    void Plotly.react(target,series.map((s,i)=>({type:'scatter',mode:'lines',name:s.name,x:s.x,y:s.y,line:{color:colors[i%colors.length],width:2}})),{
+    void Plotly.react(target,series.map((s,i)=>({type:'scatter',mode:'lines',name:s.name,x:s.x,y:s.y,line:{color:colors[i%colors.length],width:2,dash:i%2?'dash':'solid'}})),{
       autosize:true,showlegend:series.length>1,paper_bgcolor:'transparent',plot_bgcolor:'transparent',
-      margin:{l:64,r:20,t:26,b:59},font:{color:'#c5dae5'},xaxis:{title:{text:xLabel},gridcolor:'#28414f'},yaxis:{title:{text:yLabel},gridcolor:'#28414f'},
+      margin:{l:64,r:20,t:26,b:59},font:{color:'#c5dae5'},xaxis:{title:{text:xLabel},gridcolor:'#28414f',automargin:true},yaxis:{title:{text:yLabel},gridcolor:'#28414f',automargin:true,exponentformat:'SI'},
       legend:{orientation:'h',y:1.10},hovermode:'x unified',uirevision:xLabel+yLabel,shapes:latest.current===undefined?[]:[shape(latest.current)],
     },{responsive:true,displaylogo:false}).then(()=>{
       if(cancelled)return;
@@ -44,17 +45,18 @@ function Plot({series,xLabel,yLabel,cursor,seek}:Layout){
     if(ready.current&&node.current&&cursor!==undefined)void plotly.relayout(node.current,{'shapes[0].x0':cursor,'shapes[0].x1':cursor}).catch(()=>{});
   },[cursor]);
   useEffect(()=>{const target=node.current;return ()=>{if(target)Plotly.purge(target);};},[]);
-  return <>{error&&<p role="alert">{error}</p>}<div className="quake-plot" ref={node}/></>;
+  return <>{error&&<p role="alert">{error}</p>}<div className="quake-plot" aria-label={yLabel+' by '+xLabel} ref={node}/></>;
 }
 export function ResultsChart({output,floor,time,seek}:{output:Output;floor:number;time:number;seek:(v:number)=>void}){
   const [choice,setChoice]=useState<typeof plotChoices[number]>('Ground acceleration');
   const series=useMemo(()=>{
     const a=output.results[0];
-    const every=Math.max(1,Math.ceil(a.time.length/3500));
-    const indices=Array.from(a.time.keys()).filter(i=>i%every===0||i===a.time.length-1);
-    const x=indices.map(i=>a.time[i]);
-    if(choice==='Ground acceleration')return [{name:'Input acceleration',x,y:indices.map(i=>a.ground[i])}];
-    if(choice==='Energy response'&&output.results.length===1)return (['kinetic','strain','dissipation','work'] as const).map(name=>({name,x,y:indices.map(i=>a.energy[name][i])}));
+    function makeSeries(name:string,read:(i:number)=>number){
+      const indices=extremaIndices(a.time.length,read);
+      return {name,x:indices.map(i=>a.time[i]),y:indices.map(read)};
+    }
+    if(choice==='Ground acceleration')return [makeSeries('Input acceleration',i=>a.ground[i])];
+    if(choice==='Energy response'&&output.results.length===1)return (['kinetic','strain','dissipation','work'] as const).map(name=>makeSeries(name,i=>a.energy[name][i]));
     return output.results.map((r,i)=>{
       const n=r.structure.mass.length;
       const offset=output.offsets[i];
@@ -71,7 +73,7 @@ export function ResultsChart({output,floor,time,seek}:{output:Output;floor:numbe
           default:return r.energy.dissipation[j];
         }
       };
-      return {name,x,y:indices.map(value)};
+      return makeSeries(name,value);
     });
   },[output,choice,floor]);
   const unit=['m/s²','m','m/s','m/s²','%','kN','kN','J'][plotChoices.indexOf(choice)];

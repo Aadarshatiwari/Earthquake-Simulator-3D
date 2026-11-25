@@ -8,7 +8,7 @@ Versions below were read from the installed packages. The complete transitive gr
 | @react-three/fiber | 9.8.2 | MIT |
 | @react-three/rapier | 2.2.0 | MIT per upstream project |
 | leaflet | 1.9.4 | BSD-2-Clause |
-| plotly.js-dist-min | 3.7.0 | MIT |
+| plotly.js-basic-dist-min | 3.7.0 | MIT |
 | react | 19.3.1 | MIT |
 | react-dom | 19.3.1 | MIT |
 | three | 0.179.1 | MIT |

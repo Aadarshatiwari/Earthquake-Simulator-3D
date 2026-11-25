@@ -40,8 +40,9 @@ function Toggle({children,value,onClick}:{children:ReactNode;value:boolean;onCli
 function App(){
   const [tab,setTab]=useState<Tab>(()=>new URLSearchParams(location.search).get('view')==='earthquake'?'Earthquake lab':'Build & test');
   const [earthquakeSeed,setEarthquakeSeed]=useState<{project:Project;serial:number}|null>(null);
+  const [showConstructor,setShowConstructor]=useState(tab==='Build & test');
   const [showEarthquake,setShowEarthquake]=useState(tab==='Earthquake lab');
-  function go(to:Tab){if(to==='Earthquake lab')setShowEarthquake(true);setTab(to);}
+  function go(to:Tab){if(to==='Earthquake lab')setShowEarthquake(true);if(to==='Build & test')setShowConstructor(true);setTab(to);}
   function testBuilding(project:Project){
     setEarthquakeSeed(old=>({project,serial:(old?.serial??0)+1}));go('Earthquake lab');
   }
@@ -170,18 +171,19 @@ function App(){
   const sample=inspectedModel.result.samples[Math.min(Math.floor(clock/motion.dt),inspectedModel.result.samples.length-1)];
   const visibleSelection=selected?{building:inspectedBuilding,floor:inspectedFloor}:null;
   return <>
-    <header className="topbar"><a className="brand" href="#" onClick={e=>{e.preventDefault();setTab('Build & test')}}><img src={import.meta.env.BASE_URL+'logo.svg'} alt=""/><span>SeismoNepal <b>3D</b><small>Structural dynamics lab</small></span></a>
+    <a className="skip-link" href="#workspace-content">Skip to workspace</a>
+    <header className="topbar"><a className="brand" href="#" onClick={e=>{e.preventDefault();go('Build & test')}}><img src={import.meta.env.BASE_URL+'logo.svg'} alt=""/><span>SeismoNepal <b>3D</b><small>Structural dynamics lab</small></span></a>
       <nav aria-label="Main navigation">{(['Build & test','Earthquake lab','Diagnostics','Simulation','Analytics','Nepal explorer','Learn'] as Tab[]).map(item=><button key={item} aria-current={item===tab?'page':undefined} onClick={()=>go(item)}>{item}</button>)}</nav>
       <button className="subtle theme" onClick={()=>setTheme(theme==='dark'?'light':'dark')}>{theme==='dark'?'Light mode':'Dark mode'}</button>
     </header>
-    <main className="page">
+    <main className="page" id="workspace-content" tabIndex={-1}>
     <div className="print-report">
       <h1>SeismoNepal 3D · Educational simulation report</h1>
       <p>{motion.label} {motion.source&&' · '+motion.source} · {duration.toFixed(2)} s · direction {settings.direction}° · Δt {motion.dt} s</p>
       <p>Linear elastic shear-building model for educational use. It cannot certify whether a real building is earthquake-safe.</p>
       {models.map(({building,result},i)=><section key={i}><h2>Building {i?'B':'A'} · {names[i]}</h2><p>{building.floors} floors · {building.system} · {building.foundation} foundation · {building.soil} site</p><p>Floor height {building.height} m · plan {building.width} × {building.length} m · floor mass {building.mass} t · input stiffness {building.stiffness} MN/m · input damping {building.damping}% · first mode {result.modal[0].hz.toFixed(3)} Hz</p><ul>{metrics.map(([key,label,unit,factor])=><li key={key}>{label} {(result.peaks[key]*factor).toFixed(3)} {unit}</li>)}</ul></section>)}
     </div>
-    <Suspense fallback={tab==='Build & test'?<p>Loading building constructor…</p>:null}><Constructor active={tab==='Build & test'} onContinue={testBuilding}/></Suspense>
+    {showConstructor&&<Suspense fallback={tab==='Build & test'?<p>Loading building constructor…</p>:null}><Constructor active={tab==='Build & test'} onContinue={testBuilding}/></Suspense>}
     {showEarthquake&&<Suspense fallback={tab==='Earthquake lab'?<p>Loading earthquake laboratory…</p>:null}>
       <EarthquakeLab active={tab==='Earthquake lab'} seed={earthquakeSeed} onDamage={()=>{setDamage(true);setCollapse(true);restart(false);go('Simulation');}}/>
     </Suspense>}

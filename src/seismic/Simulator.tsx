@@ -10,6 +10,7 @@ import type {Job} from './jobs';
 import {responseCsv} from './export';
 import {useRun} from './useRun';
 import Waveform from './Waveform';
+import {useFullscreen} from '../ui/useFullscreen';
 import './simulator.css';
 
 const Viewport=lazy(()=>import('../constructor/Viewport'));
@@ -31,6 +32,11 @@ class GraphicsBoundary extends Component<{children:ReactNode;retry:()=>void},{fa
   state={failed:false};
   static getDerivedStateFromError(){return {failed:true};}
   render(){return this.state.failed?<div className="constructor-fallback"><p>3D graphics are unavailable. Playback and numerical tools remain available.</p><button onClick={this.props.retry}>Retry graphics</button></div>:this.props.children;}
+}
+function displayNumber(value:number){
+  const magnitude=Math.abs(value);
+  if(magnitude!==0&&(magnitude<.001||magnitude>=1e7))return value.toExponential(4);
+  return value.toLocaleString('en-US',{maximumSignificantDigits:5});
 }
 function download(parts:BlobPart[],type:string,file:string){
   const url=URL.createObjectURL(new Blob(parts,{type})),link=document.createElement('a');
@@ -72,6 +78,7 @@ export default function Simulator({active,seed,onDamage}:{active:boolean;seed:Se
   const [includeResults,setIncludeResults]=useState(true);
   const [deleteId,setDeleteId]=useState<string|null>(null);
   const stage=useRef<HTMLDivElement>(null);
+  const fullscreen=useFullscreen(stage,active);
   const resultRef=useRef<HTMLDivElement>(null);
   const asyncGeneration=useRef(0);
   const appliedSeed=useRef(0);
@@ -186,7 +193,7 @@ export default function Simulator({active,seed,onDamage}:{active:boolean;seed:Se
   }
   function seek(t:number){run.send({type:'seek',time:t});}
   function results(){
-    setResultTab('Results');requestAnimationFrame(()=>resultRef.current?.scrollIntoView({block:'nearest',behavior:'smooth'}));
+    setResultTab('Results');requestAnimationFrame(()=>resultRef.current?.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'}));
   }
   function selectPart(part:Part,index:number){
     setSelected({building:index,id:part.id});setEdit(index===1?1:0);
@@ -214,9 +221,9 @@ export default function Simulator({active,seed,onDamage}:{active:boolean;seed:Se
       <div className="quake-actions"><Flag label="Compare buildings" checked={comparison} onChange={v=>{clear();setComparison(v);if(!v)setEdit(0);setSelected(null);}}/>
         <button className="quake-primary" disabled={busy} onClick={calculate}>Calculate response</button><button onClick={()=>{openPanel('Saved');void persist();}}>Save simulation</button><button disabled={!available} onClick={results}>Results</button></div></header>
     <div className="quake-grid">
-      <section className="quake-card quake-stage" ref={stage} aria-label="Earthquake viewport">
+      <section className={'quake-card quake-stage'+(fullscreen.inline?' viewport-expanded':'')} ref={stage} aria-label="Earthquake viewport">
         <div className="quake-card-row"><div><h2>{comparison?'A · '+a.name+' / B · '+b.name:a.name}</h2><p className="quake-sub">{outcome?.label??(settings.form==='Imported CSV'?'Imported recording':'Synthetic · '+settings.form)}{outcome?.provenance?' · '+outcome.provenance:''}</p></div>
-          <button onClick={()=>setFit(v=>v+1)}>Fit</button><button onClick={async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if(stage.current?.requestFullscreen)await stage.current.requestFullscreen();else throw Error();}catch{run.setNotice('Fullscreen is unavailable.');}}}>Fullscreen</button></div>
+          <button onClick={()=>setFit(v=>v+1)}>Fit</button><button aria-pressed={fullscreen.expanded} onClick={()=>void fullscreen.toggle()}>{fullscreen.expanded?'Exit fullscreen':'Fullscreen'}</button></div>
         <div className="quake-canvas">
           {active&&<GraphicsBoundary key={graphicsKey} retry={()=>{setLost(false);setGraphicsKey(v=>v+1);}}><Suspense fallback={<div className="constructor-fallback">Loading 3D scene…</div>}>
             <Viewport geometry={geoA} config={a.config} options={viewportOptions} selected={selected?.building===0?selected.id:null} onSelect={p=>selectPart(p,0)}
@@ -305,6 +312,7 @@ export default function Simulator({active,seed,onDamage}:{active:boolean;seed:Se
             <button disabled={!available} onClick={()=>{if(outcome)download(responseCsv(outcome),'text/csv','seismonepal-response.csv');}}>Export CSV</button>
           </div>
           <label>Import simulation JSON<input type="file" accept=".json,application/json" onChange={e=>{void importConfig(e.target.files?.[0]);e.target.value='';}}/></label>
+          {savedIds.length===0&&<p className="quake-sub">No saved simulations on this device.</p>}
           <ul className="quake-saves">{savedIds.map(item=><li key={item.id}><button onClick={()=>void openSaved(item.id)}>{item.name}</button><button aria-label={'Delete '+item.name} onClick={()=>setDeleteId(item.id)}>Delete</button></li>)}</ul>
           {deleteId&&<div className="quake-alert"><p>Delete this saved simulation?</p><button onClick={async()=>{try{await deleteScenario(deleteId);setDeleteId(null);await refresh();run.setNotice('Saved simulation deleted.');}catch{run.setNotice('Could not delete the saved simulation.');}}}>Confirm deletion</button><button onClick={()=>setDeleteId(null)}>Cancel deletion</button></div>}
         </>}
@@ -345,7 +353,7 @@ export default function Simulator({active,seed,onDamage}:{active:boolean;seed:Se
             ['Base shear (kN)',(i:number)=>outcome.results[i].peak.baseShear/1000],['First period (s)',(i:number)=>outcome.results[i].structure.modes[0].period],
             ['Damping dissipation (J)',(i:number)=>outcome.results[i].energy.dissipation.at(-1)??0],
             ['Peak energy residual (J)',(i:number)=>outcome.results[i].peak.energyResidual],
-          ].map(([label,read])=><tr key={label as string}><th>{label as string}</th>{outcome.results.map((_,i)=><td key={i}>{Number((read as (i:number)=>number)(i).toPrecision(5)).toLocaleString()}</td>)}</tr>)}
+          ].map(([label,read])=><tr key={label as string}><th>{label as string}</th>{outcome.results.map((_,i)=><td key={i}>{displayNumber((read as (i:number)=>number)(i))}</td>)}</tr>)}
         </tbody></table></div></section><Suspense fallback={<p>Loading response plots…</p>}><ResultsChart output={outcome} floor={floor} time={t} seek={seek}/></Suspense></>:<p className="quake-sub">Calculate a response to see results.</p>)}
       {resultTab==='Resonance'&&<section className="quake-card quake-live"><div className="quake-card-row"><h2>Resonance laboratory</h2><button onClick={()=>selectScenario('Resonance')}>Tune to building A</button></div>
         <p className="quake-sub">This steady-state curve divides the roof motion under harmonic base acceleration by its static-equivalent offset. Compare the peak against the selected input frequency. Change mass, stiffness, or damping under Building to see how the curve shifts.</p>

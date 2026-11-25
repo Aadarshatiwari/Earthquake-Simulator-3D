@@ -42,3 +42,14 @@
   .topbar{height:auto;grid-template-columns:minmax(0,1fr) auto;padding:.65rem 1rem;gap:.6rem}
   .topbar nav{grid-column:1/-1;grid-row:2;overflow:auto}
 }
+
+.quake-config summary{min-height:36px}
+.quake-config details[open]{max-height:min(640px,68dvh);overflow:auto;scrollbar-width:thin}
+@media(max-width:860px){
+  .quake-heading{gap:8px;margin-bottom:11px}
+  .quake-heading h1{font-size:clamp(1.55rem,5vw,2.2rem)}
+  .quake-stage .quake-card-row h2{font-size:.93rem}
+  .quake-timeline .quake-actions:first-child{flex:1 0 100%}
+  .quake-timeline .quake-actions:first-child button{min-height:42px}
+  .quake-legend{grid-template-columns:minmax(90px,1fr) 1fr auto}
+}

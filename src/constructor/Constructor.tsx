@@ -4,6 +4,7 @@ import {generate,type Part} from './geometry';
 import {editHistory,materials,moveHistory,numberLimits,presetConfig,presets,readLibrary,readProject,resize,toModel,validateConfig,writeProject,type Config,type History,type Level,type Project} from './model';
 import type {ConstructorResult} from './analysis';
 import {cameras,environments,qualities,views,type Options} from './viewOptions';
+import {useFullscreen} from '../ui/useFullscreen';
 import './constructor.css';
 
 const Viewport=lazy(()=>import('./Viewport'));
@@ -66,6 +67,7 @@ export default function Constructor({active,onContinue}:{active:boolean;onContin
   const [speed,setSpeed]=useState(1);
   const time=useRef(0);
   const stage=useRef<HTMLDivElement>(null);
+  const fullscreen=useFullscreen(stage,active);
   const worker=useRef<Worker|null>(null);
   const {current}=history;
   const {config}=current;
@@ -194,12 +196,9 @@ export default function Constructor({active,onContinue}:{active:boolean;onContin
       </div>
     </header>
     <div className="constructor-layout">
-      <section className="build-stage" ref={stage} aria-label="Building viewport">
+      <section className={'build-stage'+(fullscreen.inline?' viewport-expanded':'')} ref={stage} aria-label="Building viewport">
         <div className="viewport-title"><div><strong>{current.name}</strong><p>{config.levels.length} {config.levels.length===1?'storey':'storeys'} · {config.width} × {config.length} m · {geometry.height.toFixed(1)} m tall</p></div>
-          <button onClick={()=>setFit(n=>n+1)}>Fit view</button><button onClick={async()=>{
-            try{if(document.fullscreenElement)await document.exitFullscreen();else await stage.current?.requestFullscreen();}
-            catch{setNotice('Fullscreen is unavailable in this browser.');}
-          }}>Fullscreen</button>
+          <button onClick={()=>setFit(n=>n+1)}>Fit view</button><button aria-pressed={fullscreen.expanded} onClick={()=>void fullscreen.toggle()}>{fullscreen.expanded?'Exit fullscreen':'Fullscreen'}</button>
         </div>
         <div className="build-canvas">
           <SceneBoundary key={contextKey} recover={()=>{setLost(false);setContextKey(n=>n+1);}}>

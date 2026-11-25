@@ -96,7 +96,7 @@ export function generate(c:Config){
     }
     if(last&&c.roof==='Gable'){
       const pitch=.33,half=c.length/2+.36;
-      for(const sign of [-1,1])add('pitch-'+sign,'Roof','Tile',[0,top+half*Math.tan(pitch)/2,sign*half/2],[c.width+.75,.115,half/Math.cos(pitch)+.04],true,[-sign*pitch,0,0]);
+      for(const sign of [-1,1])add('pitch-'+sign,'Roof','Tile',[0,top+half*Math.tan(pitch)/2,sign*half/2],[c.width+.75,.115,half/Math.cos(pitch)+.04],true,[sign*pitch,0,0]);
       add('ridge','Trim','Timber',[0,top+half*Math.tan(pitch),0],[c.width+.8,.13,.14],true);
       for(const sign of [-1,1])add('gable-'+sign,'Wall',c.finish,[sign*c.width/2,top,0],[c.wall,half*Math.tan(pitch),c.length],true,undefined,'gable');
     }

@@ -1,11 +1,11 @@
-import {useEffect,useLayoutEffect,useMemo,useRef,type RefObject} from 'react';
+import {lazy,Suspense,useEffect,useLayoutEffect,useMemo,useRef,type RefObject} from 'react';
 import {Canvas,useThree,useFrame} from '@react-three/fiber';
 import {OrbitControls,OrthographicCamera,PerspectiveCamera,ContactShadows,AdaptiveDpr} from '@react-three/drei';
-import {ACESFilmicToneMapping,Color,Mesh,MeshBasicMaterial,DoubleSide,BoxGeometry,ExtrudeGeometry,Shape,Group,InstancedMesh,MeshStandardMaterial,Object3D,Plane,PMREMGenerator,Vector3} from 'three';
+import {ACESFilmicToneMapping,Color,Mesh,MeshBasicMaterial,DoubleSide,BoxGeometry,ExtrudeGeometry,Shape,Group,InstancedMesh,MeshStandardMaterial,Object3D,Plane,PMREMGenerator,Vector3,type CanvasTexture} from 'three';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import type {OrbitControls as Controls} from 'three-stdlib';
 import type {ConstructorResult} from './analysis';
-import Valley from '../Valley';
+const Valley=lazy(()=>import('../Valley'));
 import type {Mode} from '../engine';
 import {materials,type Config,type Surface} from './model';
 import {surfaceSpec,makeSurface} from './materials';
@@ -57,7 +57,7 @@ function Rig({options,geometry,fit}:{options:Options;geometry:Props['geometry'];
   useFrame(()=>{
     const control=controls.current,move=transition.current;
     if(!control||!move)return;
-    const t=Math.min(1,(performance.now()-move.started)/230),eased=t*t*(3-2*t);
+    const t=matchMedia('(prefers-reduced-motion: reduce)').matches?1:Math.min(1,(performance.now()-move.started)/230),eased=t*t*(3-2*t);
     control.object.position.lerpVectors(move.start,move.end,eased);
     control.target.lerpVectors(move.targetStart,move.targetEnd,eased);
     control.update();
@@ -97,10 +97,10 @@ function Stage({options,level,footing}:{options:Options;level:number;footing:num
       shadow-mapSize={[512*2**(level-1),512*2**(level-1)]} shadow-camera-left={-35} shadow-camera-right={35}
       shadow-camera-top={45} shadow-camera-bottom={-35} shadow-normalBias={.06}/>
     <Lighting enabled={level>=2}/>
-    <mesh position={[0,foundation?-footing-.025:-.014,0]} rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[360,360]}/><meshStandardMaterial roughness={.95} color={studio?'#26353c':rural?'#777954':'#737862'}/></mesh>
+    <mesh position={[0,foundation?-footing-.025:-.014,0]} rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[360,360]}/><meshStandardMaterial roughness={.95} color={studio?'#26353c':rural?'#76785d':'#787c70'}/></mesh>
     {studio&&<gridHelper args={[140,70,'#4c717f','#384e58']} position={[0,foundation?-footing-.014:.002,0]}/>}
     {!studio&&options.details&&(neighborhood||rural)&&<>
-      <Valley/>
+      <Suspense fallback={null}><Valley/></Suspense>
       {neighborhood&&<><mesh position={[0,.005,20]} rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[145,7]}/><meshStandardMaterial color="#474947"/></mesh>
       {Array.from({length:17},(_,i)=><mesh key={i} position={[(i-8)*7,.011,20]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[2.4,.08]}/><meshStandardMaterial color="#d3bf95"/></mesh>)}</>}
       {Array.from({length:rural?5:12},(_,i)=>{
@@ -138,7 +138,8 @@ function Batch({parts,origin,material,plane,onSelect}:{parts:Part[];origin:numbe
     }}/>;
 }
 
-function Structure({config,geometry,options,selected,onSelect,time,mode,result,motion,heat='None',heatMax=1,direction=0,showGround=true}:Props){
+type TextureSet=Partial<Record<Surface,CanvasTexture>>;
+function Structure({config,geometry,options,selected,onSelect,time,mode,result,motion,heat='None',heatMax=1,direction=0,showGround=true,textures}:Props&{textures:TextureSet}){
   const floorGroups=useRef<(Group|null)[]>([]);
   const platform=useRef<Group>(null);
   const bands=useRef<(Mesh<BoxGeometry,MeshBasicMaterial>|null)[]>([]);
@@ -151,8 +152,6 @@ function Structure({config,geometry,options,selected,onSelect,time,mode,result,m
     geometry.parts.forEach(part=>byStorey[part.storey+1].push(part));
     return byStorey;
   },[geometry,config.levels.length]);
-  const textures=useMemo(()=>Object.fromEntries(materials.filter(s=>s!=='Glass').map(s=>[s,makeSurface(s)])),[]);
-  useEffect(()=>()=>Object.values(textures).forEach(texture=>texture.dispose()),[textures]);
   const liveMaterials=useMemo(()=>{
     const clippingPlanes=view==='Section'?[plane]:null;
     return Object.fromEntries(materials.map(surface=>{
@@ -268,21 +267,41 @@ function FrameInvalidator({time}:{time?:number}){
 }
 function Monitor({active,onFps,onLost}:{active:boolean;onFps:Props['onFps'];onLost:Props['onLost']}){
   const gl=useThree(state=>state.gl);
+  const callback=useRef(onLost);
+  callback.current=onLost;
   useEffect(()=>{
     const canvas=gl.domElement;
-    const lost=(e:Event)=>{e.preventDefault();onLost(true);};
-    const restored=()=>onLost(false);
+    const lost=(e:Event)=>{e.preventDefault();callback.current(true);};
+    const restored=()=>callback.current(false);
     canvas.addEventListener('webglcontextlost',lost);canvas.addEventListener('webglcontextrestored',restored);
     return ()=>{canvas.removeEventListener('webglcontextlost',lost);canvas.removeEventListener('webglcontextrestored',restored);};
-  },[gl,onLost]);
-  const frame=useRef({count:0,time:0});
+  },[gl]);
+  const frame=useRef({count:0,time:0,at:0});
+  const profile=useMemo(()=>new URLSearchParams(location.search).has('profile'),[]);
   useFrame((_,delta)=>{
-    if(!active||delta>.35){frame.current={count:0,time:0};return;}
+    if(profile&&performance.now()-frame.current.at>500){
+      frame.current.at=performance.now();
+      const {calls,triangles}=gl.info.render,{textures,geometries}=gl.info.memory;
+      gl.domElement.dataset.renderStats=JSON.stringify({calls,triangles,textures,geometries});
+    }
+    if(!active||delta>.35){frame.current.count=0;frame.current.time=0;return;}
     frame.current.count++;
     frame.current.time+=delta;
-    if(frame.current.time>=1){onFps(Math.round(frame.current.count/frame.current.time));frame.current={count:0,time:0};}
+    if(frame.current.time>=1){onFps(Math.round(frame.current.count/frame.current.time));frame.current.count=0;frame.current.time=0;}
   });
   return null;
+}
+function Structures({props,spacing,level}:{props:Props;spacing:number;level:number}){
+  const second=props.comparison;
+  const names=useMemo(()=>[...new Set([...props.geometry.parts,...(second?.geometry.parts??[])].map(part=>part.surface))]
+    .filter(surface=>surface!=='Glass').sort().join(','),[props.geometry,second?.geometry]);
+  const textures=useMemo<TextureSet>(()=>Object.fromEntries(names.split(',').filter(Boolean)
+    .map(s=>[s,makeSurface(s as Surface,level===0?64:128)])),[names,level===0]);
+  useEffect(()=>()=>Object.values(textures).forEach(texture=>texture.dispose()),[textures]);
+  return <>
+    <group position={[-spacing,0,0]}><Structure {...props} textures={textures}/></group>
+    {second&&<group position={[spacing,0,0]}><Structure {...props} {...second} textures={textures} options={{...props.options,floor:Math.min(props.options.floor,second.config.levels.length-1)}}/></group>}
+  </>;
 }
 export default function Viewport(props:Props){
   const level=props.options.quality==='Automatic'?(devicePixelRatio>1.5||navigator.hardwareConcurrency<=4?1:2):qualities.indexOf(props.options.quality)-1;
@@ -293,8 +312,7 @@ export default function Viewport(props:Props){
     shadows={level>0} gl={{antialias:true,toneMapping:ACESFilmicToneMapping,localClippingEnabled:true}} fallback={<p className="constructor-fallback">WebGL 2 is unavailable. Building configuration and project tools remain available.</p>}>
     <Stage options={props.options} level={level} footing={props.config.footing}/>{props.options.quality==='Automatic'&&<AdaptiveDpr/>}<Rig options={props.options} geometry={fitGeometry} fit={props.fit}/>
         {props.reference&&<SeismicReference time={props.time} direction={props.direction} extent={Math.max(fitGeometry.width,fitGeometry.length)} waves={Boolean(props.waves)}/>}
-    <group position={[-spacing,0,0]}><Structure {...props}/></group>
-    {second&&<group position={[spacing,0,0]}><Structure {...props} {...second} options={{...props.options,floor:Math.min(props.options.floor,second.config.levels.length-1)}}/></group>}
+    <Structures props={props} spacing={spacing} level={level}/>
     <FrameInvalidator time={props.frameTime}/>
     <Monitor active={props.playing} onFps={props.onFps} onLost={props.onLost}/>
   </Canvas>;

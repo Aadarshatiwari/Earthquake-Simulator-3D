@@ -20,3 +20,10 @@
 - Added synthetic scenario controls, sourced CSV, corrected synthetic ground kinematics, steady-state resonance, and side-by-side comparisons.
 - Added local simulation result storage, duplicate/delete, JSON and CSV export, optional procedural rumble and haptics, and isolated access to the visual damage demo.
 - Added Phase 3 automated checks and reproducible numerical performance benchmarks.
+
+## Phase 3.5
+
+- Replaced full Plotly with the official Basic bundle. Added extrema-preserving chart sampling and deferred the constructor, valley context, and illustrative debris where applicable.
+- Shared procedural textures across comparison buildings and reduced Low-quality texture resolution.
+- Refined theme, mobile spacing, keyboard focus, and reduced-motion behaviour. Added an in-app fullscreen fallback.
+- Captured the running app, measured before and after, and documented browser and Android verification limits.

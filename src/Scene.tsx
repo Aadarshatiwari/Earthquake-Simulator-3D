@@ -1,7 +1,6 @@
-import {useLayoutEffect,useRef, type RefObject} from 'react';
+import {lazy,Suspense,useLayoutEffect,useRef, type RefObject} from 'react';
 import {Canvas,useFrame,useThree} from '@react-three/fiber';
 import {OrbitControls,ContactShadows,Sky} from '@react-three/drei';
-import {Physics,RigidBody,CuboidCollider} from '@react-three/rapier';
 import {Group,Color,Vector3,Quaternion,Mesh,MeshStandardMaterial} from 'three';
 import type {Building,Result} from './solver';
 
@@ -83,32 +82,7 @@ function Structure({model,time,dt,direction,scale,wire,section,demand,damage,col
   </group>;
 }
 const town=Array.from({length:26},(_,i)=>({x:(i%9-4)*10+Math.sin(i*13)*2,z:-23-Math.floor(i/9)*12+Math.cos(i*11)*2,h:2+(i*7)%9,w:2.4+i%4,color:['#906858','#6f7e69','#baa084','#a48070'][i%4]}));
-function Debris({models,time,dt,runId,playing,collapse}:{models:Model[];time:RefObject<number>;dt:number;runId:number;playing:boolean;collapse:boolean}){
-  const threshold=models.map(({result})=>collapse?result.samples.at(-1)!.t*.55:(result.samples.find(s=>s.drift.some(v=>Math.abs(v)>.018))?.t??Infinity));
-  const spacing=Math.max(13,...models.map(({building})=>building.width*.64));
-  const blocks=useRef<(import('@react-three/rapier').RapierRigidBody|null)[]>([]);
-  const triggered=useRef<boolean[]>([]);
-  useFrame(()=>{
-    models.forEach(({building:b},m)=>{
-      const shouldDrop=time.current+dt*.1>=threshold[m];
-      if(shouldDrop===triggered.current[m])return;
-      triggered.current[m]=shouldDrop;
-      const offset=models.length>1?(m===0?-spacing:spacing):0;
-      for(let i=0;i<7;i++){
-        const block=blocks.current[m*7+i];
-        if(!block)continue;
-        block.setTranslation({x:offset+(i-3)*b.width/9,y:b.floors*b.height*.8+i*.27,z:b.length/2+.7},true);
-        block.setLinvel({x:0,y:0,z:0},true);
-        block.setAngvel({x:0,y:0,z:0},true);
-        block.setEnabled(shouldDrop);
-        if(shouldDrop)block.applyImpulse({x:(i-3)*.04,y:.05,z:.18},true);
-      }
-    });
-  });
-  return <Physics key={runId} paused={!playing} gravity={[0,-9.81,0]}><CuboidCollider args={[90,.3,90]} position={[0,-.3,0]}/>
-    {models.flatMap((_,m)=>Array.from({length:7},(_,i)=><RigidBody key={m+':'+i} ref={el=>{blocks.current[m*7+i]=el;el?.setEnabled(false)}} colliders="cuboid" position={[0,-10,0]}><mesh castShadow><boxGeometry args={[.37,.27,.31]}/><meshStandardMaterial color="#d38d70"/></mesh></RigidBody>))}
-  </Physics>;
-}
+const Debris=lazy(()=>import('./LegacyDebris'));
 function CameraRig({position,target,distance}:{position:[number,number,number];target:number;distance:number}){
   const camera=useThree(state=>state.camera);
   const controls=useRef<import('three-stdlib').OrbitControls>(null);
@@ -156,6 +130,6 @@ export default function Scene(props:SceneProps){
     <Valley/>
     <ContactShadows position={[0,.034,0]} scale={62} opacity={.4} blur={2.4} far={20} frames={1}/>
     {props.models.map((model,i)=><Structure key={i} {...props} index={i} model={model} offset={props.models.length>1?(i===0?-spacing:spacing):0}/>)}
-    {(props.damage||props.collapse)&&<Debris key={props.runId} {...props}/>}
+    {(props.damage||props.collapse)&&<Suspense fallback={null}><Debris key={props.runId} {...props}/></Suspense>}
   </Canvas>;
 }
